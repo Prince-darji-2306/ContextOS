@@ -24,7 +24,7 @@ async def close_pool():
 
 CREATE_TABLES_SQL = """
 
-CREATE TABLE users IF NOT EXISTS(
+CREATE TABLE IF NOT EXISTS users (
     id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email         TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
@@ -32,11 +32,12 @@ CREATE TABLE users IF NOT EXISTS(
     created_at    TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE api_keys (
+CREATE TABLE IF NOT EXISTS api_keys (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id     UUID REFERENCES users(id) ON DELETE CASCADE,
     key_hash    TEXT UNIQUE NOT NULL,
     key_prefix  TEXT NOT NULL,
+    app_id      TEXT NOT NULL,
     app_name    TEXT NOT NULL,
     created_at  TIMESTAMPTZ DEFAULT NOW(),
     last_used   TIMESTAMPTZ,
@@ -44,7 +45,7 @@ CREATE TABLE api_keys (
     is_active   BOOLEAN DEFAULT TRUE
 );
 
-CREATE TABLE app_registry (
+CREATE TABLE IF NOT EXISTS app_registry (
     id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id       UUID REFERENCES users(id) ON DELETE CASCADE,
     app_id        TEXT NOT NULL,
@@ -53,7 +54,7 @@ CREATE TABLE app_registry (
     last_seen     TIMESTAMPTZ
 );
 
-CREATE TABLE agent_logs (
+CREATE TABLE IF NOT EXISTS agent_logs (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     agent_name  TEXT NOT NULL,
     user_id     UUID REFERENCES users(id),

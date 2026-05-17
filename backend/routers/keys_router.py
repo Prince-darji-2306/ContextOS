@@ -8,7 +8,7 @@ router = APIRouter()
 @router.post("/api-key")
 async def generate_api_key(req : GenerateAPIKeyRequest , user_id : str = Depends(get_current_user)):
     try:
-        key =  create_user_api_key(user_id, req.app_id, req.app_name, req.ttl_days)
+        key = await create_user_api_key(user_id, req.app_id, req.app_name, req.ttl_days)
         return {
             "key": key,
             "user_id": user_id,

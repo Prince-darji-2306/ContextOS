@@ -17,17 +17,17 @@ JWT_ALGORITHM = "HS256"
 JWT_EXPIRY_DAYS = 7
 
 def hash_password(password: str):
-    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
 def verify_password(password: str, hashed_password: str):
-    return bcrypt.checkpw(password.encode('utf-8'), hashed_password)
+    return bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 
 def create_access_token(user_id: str):
     payload = {
         'user':user_id,
-        "expiry": datetime.now(timezone.utc) + timedelta(days=JWT_EXPIRY_DAYS),
-        "issued_at": datetime.now(timezone.utc),
+        "expiry": int((datetime.now(timezone.utc) + timedelta(days=JWT_EXPIRY_DAYS)).timestamp()),
+        "issued_at": int(datetime.now(timezone.utc).timestamp()),
     }
     return jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
 
@@ -53,7 +53,7 @@ async def get_current_user(authorization: str = Header(...)) -> str:
 async def create_user_api_key(user_id: str , app_id: str , app_name: str , ttl_days: int = 7):
 
     random_secret = secrets.token_urlsafe(32)
-    key_prefix = "ctx" + app_id
+    key_prefix = "ctx-" + app_id + "_"
     key = key_prefix + random_secret
 
     hashed_key = hash_password(key)
