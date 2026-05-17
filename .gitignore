@@ -1,5 +1,12 @@
 .env
 */__pycache__
+
+backend/models/__pycache__
+backend/repos/__pycache__
+backend/routers/__pycache__
+backend/utils/__pycache__
+
 frontend/node_modules
 frontend/.vite
+
 Systems.md
