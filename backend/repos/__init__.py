@@ -7,3 +7,7 @@ from .postgres import (
     create_user
     )
 
+from .qdrant import (
+    init_collection,
+)
+
