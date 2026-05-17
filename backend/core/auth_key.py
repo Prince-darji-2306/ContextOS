@@ -2,8 +2,8 @@ import bcrypt
 import secrets
 from jose import jwt
 from dotenv import load_dotenv
-from fastapi import HTTPException, Header
 from jose.exceptions import JWTError
+from fastapi import HTTPException, Header
 from datetime import datetime, timedelta, timezone
 
 from repos import store_api_key
@@ -50,6 +50,7 @@ async def get_current_user(authorization: str = Header(...)) -> str:
 
 
 # ------------- API Key Generation & Storage ----------------
+
 async def create_user_api_key(user_id: str , app_id: str , app_name: str , ttl_days: int = 7):
 
     random_secret = secrets.token_urlsafe(32)

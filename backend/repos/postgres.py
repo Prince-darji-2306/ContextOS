@@ -116,6 +116,8 @@ async def get_user_by_id(id : str) -> dict | None:
     return dict(result)
 
 
+
+# ------------- API Key Functions ----------------
 async def store_api_key(user_id: str, app_id: str, app_name: str, key_prefix: str, hashed_key: str, ttl_days: int):
     pool = await get_pool()
     async with pool.acquire() as conn:
@@ -126,3 +128,15 @@ async def store_api_key(user_id: str, app_id: str, app_name: str, key_prefix: st
             """,
             user_id, app_id, app_name, key_prefix, hashed_key, ttl_days
         )
+
+async def get_user_api_keys(user_id: str, ):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("SELECT id, app_name, key_prefix, last_used, ttl_days FROM api_keys WHERE user_id = $1 ORDER BY created_at DESC", user_id)
+    
+    return [dict(row) for row in rows]
+
+async def remove_user_api_key(user_id: str, id: str):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute("DELETE FROM api_keys WHERE user_id = $1 AND id = $2", user_id, id)
