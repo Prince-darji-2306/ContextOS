@@ -18,7 +18,7 @@ load_dotenv()
 
 _embedding_model: SentenceTransformer | None = None
 
-def get_embedding_model() -> SentenceTransformer:
+async def get_embedding_model() -> SentenceTransformer:
     """Get cached SentenceTransformer model."""
     global _embedding_model
     if _embedding_model is None:
@@ -26,9 +26,9 @@ def get_embedding_model() -> SentenceTransformer:
     return _embedding_model
 
 
-def get_embedding(text: str) -> list[float]:
+async def get_embedding(text: str) -> list[float]:
     """Generate a 384-dim embedding for the given text."""
-    model = get_embedding_model()
+    model = await get_embedding_model()
     embedding = model.encode(text, normalize_embeddings=True)
     return embedding.tolist()
 
@@ -36,7 +36,7 @@ def get_embedding(text: str) -> list[float]:
 
 _qdrant_client: QdrantClient | None = None
 
-def get_qdrant_client() -> QdrantClient:
+async def get_qdrant_client() -> QdrantClient:
     """Get the global Qdrant client singleton."""
     global _qdrant_client
     if _qdrant_client is None:
@@ -50,7 +50,7 @@ def get_qdrant_client() -> QdrantClient:
 #------------- Setup Qdrant --------------
 
 async def init_collection():
-    client = get_qdrant_client()
+    client = await get_qdrant_client()
     collections = [c.name for c in client.get_collections().collections]
 
     if "memories" not in collections:
@@ -60,13 +60,10 @@ async def init_collection():
         )
         print('Creating Collection Memories..')
     
-    client.create_payload_index(
-        collection_name="memories",
-        field_name="user_id",
-        field_schema=PayloadSchemaType.KEYWORD
-    )
-
-    print('Index for user_id Created..')
-
-
-#------------- Upsert Points -----------------
+    client.create_payload_index("memories", "user_id",     PayloadSchemaType.KEYWORD)
+    client.create_payload_index("memories", "app_id",      PayloadSchemaType.KEYWORD)
+    client.create_payload_index("memories", "memory_type", PayloadSchemaType.KEYWORD)
+    client.create_payload_index("memories", "tags",        PayloadSchemaType.KEYWORD)
+    client.create_payload_index("memories", "created_at",  PayloadSchemaType.DATETIME)
+    client.create_payload_index("memories", "ttl",         PayloadSchemaType.DATETIME)
+    print('All Index are Created..')

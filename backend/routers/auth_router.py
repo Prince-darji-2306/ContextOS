@@ -3,7 +3,7 @@ from schemas import LoginRequest, RegisterRequest
 from repos import get_user_by_email , create_user 
 from core import create_access_token, hash_password, verify_password
 
-router = APIRouter()
+router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post("/register")
 async def register(req : RegisterRequest):

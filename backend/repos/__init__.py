@@ -11,6 +11,9 @@ from .postgres import (
 
 from .qdrant import (
     init_collection,
+    get_embedding_model,
+    get_embedding,
+    get_qdrant_client,
 )
 
 

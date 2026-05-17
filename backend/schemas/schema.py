@@ -1,3 +1,4 @@
+from typing import Any
 from pydantic import BaseModel
 
 
@@ -15,3 +16,19 @@ class GenerateAPIKeyRequest(BaseModel):
     app_id: str
     app_name: str
     ttl_days: int | None = None
+
+class WriteMemoryRequest(BaseModel):
+    app_id: str
+    text: str
+    tags: list[str]
+    memory_type: str
+    ttl: int | None = None
+
+class RecallMemoryRequest(BaseModel):
+    query: str
+    top_k: int
+
+class SearchMemoryRequest(BaseModel):
+    filters: dict[str, Any]
+    limit: int = 50
+    offset: int = 0
