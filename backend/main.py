@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 
 from repos import init_db , close_pool , init_collection
-from routers import auth_router, keys_router
+from routers import auth_router, keys_router, memory_router
 
 
 @asynccontextmanager
@@ -28,7 +28,7 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(keys_router)
-
+app.include_router(memory_router)
 
 @app.get("/health")
 def read_root():
