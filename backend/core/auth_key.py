@@ -1,10 +1,12 @@
 import bcrypt
+import secrets
 from jose import jwt
-from uuid import uuid4
 from dotenv import load_dotenv
 from fastapi import HTTPException, Header
 from jose.exceptions import JWTError
 from datetime import datetime, timedelta, timezone
+
+from repos import store_api_key
 
 import os
 
@@ -19,9 +21,6 @@ def hash_password(password: str):
 
 def verify_password(password: str, hashed_password: str):
     return bcrypt.checkpw(password.encode('utf-8'), hashed_password)
-
-def generate_api_key(app_id : str , app_name : str):
-    return f"ctxos_pk_{app_id[:8]}_{app_name[:8]}_{uuid4().hex}"
 
 
 def create_access_token(user_id: str):
@@ -48,3 +47,17 @@ async def get_current_user(authorization: str = Header(...)) -> str:
         
     token = authorization.split(" ", 1)[1]
     return decode_token(token)
+
+
+# ------------- API Key Generation & Storage ----------------
+async def create_user_api_key(user_id: str , app_id: str , app_name: str , ttl_days: int = 7):
+
+    random_secret = secrets.token_urlsafe(32)
+    key_prefix = "ctx" + app_id
+    key = key_prefix + random_secret
+
+    hashed_key = hash_password(key)
+    
+    await store_api_key(user_id, app_id, app_name, key_prefix, hashed_key, ttl_days)
+
+    return key

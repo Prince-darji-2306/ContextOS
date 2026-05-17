@@ -1,1 +1,1 @@
-from .schema import LoginRequest, RegisterRequest
+from .schema import LoginRequest, RegisterRequest, GenerateAPIKeyRequest
