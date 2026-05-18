@@ -1,14 +1,21 @@
 from uuid import uuid4
 from fastapi import HTTPException
 from datetime import datetime, timezone, timedelta
-from qdrant_client.models import PointStruct, Filter, FieldCondition, MatchValue
 from repos import get_qdrant_client , get_embedding 
+from qdrant_client.models import PointStruct, Filter, FieldCondition, MatchValue, PointIdsList, Increment
 from schemas import WriteMemoryRequest, RecallMemoryRequest, SearchMemoryRequest
+
 
 async def create_memory(user_id: str , req : WriteMemoryRequest):
     try:
         client = await get_qdrant_client()
-        embedding = await get_embedding(req.text)
+        partial_results = await check_duplicates(req.text, user_id)
+        
+        if partial_results["is_duplicate"]:
+            return partial_results
+
+        embedding = partial_results["query_embedding"]
+            
         memory = {
             "user_id": user_id,
             "app_id": req.app_id,
@@ -27,13 +34,13 @@ async def create_memory(user_id: str , req : WriteMemoryRequest):
             collection_name="memories",
             points=[PointStruct(id=str(uuid4()), vector=embedding, payload=memory)],
         )
-        return {"message" : "Memory written successfully"}
+        return {"is_duplicate" : False , "message" : "Memory written successfully"}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
 
-async def recall_memory(user_id : str , req : RecallMemoryRequest):
+async def recall_memory(user_id : str , req : RecallMemoryRequest, embedding:bool = False):
     try:
         client = await get_qdrant_client()
         query_embedding = await get_embedding(req.query)
@@ -51,10 +58,13 @@ async def recall_memory(user_id : str , req : RecallMemoryRequest):
             with_vectors=False,
         )
 
+        if embedding:
+            return results, query_embedding
         return results
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 async def search_memory(user_id : str , req : SearchMemoryRequest):
     try:
@@ -83,6 +93,64 @@ async def search_memory(user_id : str , req : SearchMemoryRequest):
         )
 
         return results
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+async def check_duplicates(query: str, user_id: str, threshold = 0.85):
+    try:
+        results, query_embedding = await recall_memory(user_id,RecallMemoryRequest(query=query, top_k=1), embedding=True)
+        if results.points:
+            memory = results.points[0]
+            if memory.score >= threshold:
+                return {
+                    "is_duplicate": True,
+                    "existing_memory_id": memory.id,
+                    "similarity_score": memory.score,
+                    "existing_content_preview": memory.payload["content"],
+                }
+
+        return {"is_duplicate": False, "query_embedding": query_embedding}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+async def forget_memories(memory_ids : list[str]):
+    try:
+        client = await get_qdrant_client()
+
+        if not memory_ids:
+            raise HTTPException(
+                status_code=400,
+                detail="memory_ids required"
+            )
+
+        client.delete(
+            collection_name="memories",
+            points_selector=PointIdsList(points = memory_ids)
+        )
+
+        return {"message" : "Memories deleted successfully"}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+async def update_access_stats(memory_ids: list[str]):
+    try:
+        client = await get_qdrant_client()
+        
+        client.set_payload(
+            collection_name="memories",
+            payload={
+                "last_accessed": datetime.now(timezone.utc).isoformat(),
+                "access_count": Increment(points=memory_ids, amount=1)
+            },
+            points=memory_ids   
+        )
+        return {"message" : "Access stats updated successfully"}
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
