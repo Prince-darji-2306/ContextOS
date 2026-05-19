@@ -154,3 +154,10 @@ async def update_access_stats(memory_ids: list[str]):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# ------------Importance Scoring------------
+def score_memory(similarity: float, created_at: str) -> float:
+    created = datetime.fromisoformat(created_at)
+    days_old = (datetime.now(timezone.utc) - created).days
+    recency_score = 1 / (1 + days_old)
+    return (0.7 * similarity) + (0.3 * recency_score)

@@ -37,7 +37,7 @@ async def search_user_memories(req : SearchMemoryRequest, user_id: str = Depends
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post('/forget')
+@router.delete('/forget')
 async def forget_user_memories(memory_ids : list[str], user_id: str = Depends(get_current_user)):
     try:
         return await forget_memories(memory_ids)
