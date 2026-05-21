@@ -3,7 +3,7 @@ from math import log1p
 from fastapi import HTTPException
 from datetime import datetime, timezone, timedelta
 from repos import get_qdrant_client , get_embedding 
-from qdrant_client.models import PointStruct, Filter, FieldCondition, MatchValue, PointIdsList, Increment, UpdateOperation, SetPayloadOperation
+from qdrant_client.models import PointStruct, Filter, FieldCondition, MatchValue, PointIdsList, UpdateOperation, SetPayloadOperation
 from schemas import WriteMemoryRequest, RecallMemoryRequest, SearchMemoryRequest
 
 
@@ -139,22 +139,6 @@ async def forget_memories(memory_ids : list[str]):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-async def update_access_stats(memory_ids: list[str]):
-    try:
-        client = await get_qdrant_client()
-        
-        client.set_payload(
-            collection_name="memories",
-            payload={
-                "last_accessed": datetime.now(timezone.utc).isoformat(),
-                "access_count": Increment(points=memory_ids, amount=1)
-            },
-            points=memory_ids   
-        )
-        return {"message" : "Access stats updated successfully"}
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 # ------------Importance Scoring------------
 async def score_memory(similarity: float, created_at: str, access_count: int) -> float:
