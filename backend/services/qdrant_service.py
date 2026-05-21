@@ -139,7 +139,6 @@ async def forget_memories(memory_ids : list[str]):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-
 # ------------Importance Scoring------------
 async def score_memory(similarity: float, created_at: str, access_count: int) -> float:
     created = datetime.fromisoformat(created_at)
