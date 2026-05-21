@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from core import get_current_user
-from services import create_memory, recall_memory, search_memory, update_access_stats, forget_memories
+from services import create_memory, recall_memory, search_memory, batch_update_scores_and_stats, forget_memories
 from schemas import WriteMemoryRequest, RecallMemoryRequest, SearchMemoryRequest
 
 router = APIRouter(prefix='/memories', tags=['memories'])
@@ -18,13 +18,8 @@ async def write_user_memories(req : WriteMemoryRequest, user_id: str = Depends(g
 async def recall_user_memories(req : RecallMemoryRequest, bgtasks: BackgroundTasks, user_id: str = Depends(get_current_user)):
     try:
         result = await recall_memory(user_id, req)
-        
-        memory_ids = [point.id for point in result.points]
-        
-        bgtasks.add_task(update_access_stats, memory_ids)
-        
+        bgtasks.add_task(batch_update_scores_and_stats, result.points)
         return result
-        
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -43,4 +38,3 @@ async def forget_user_memories(memory_ids : list[str], user_id: str = Depends(ge
         return await forget_memories(memory_ids)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-

@@ -1,8 +1,9 @@
 from uuid import uuid4
+from math import log1p
 from fastapi import HTTPException
 from datetime import datetime, timezone, timedelta
 from repos import get_qdrant_client , get_embedding 
-from qdrant_client.models import PointStruct, Filter, FieldCondition, MatchValue, PointIdsList, Increment
+from qdrant_client.models import PointStruct, Filter, FieldCondition, MatchValue, PointIdsList, Increment, UpdateOperation, SetPayloadOperation
 from schemas import WriteMemoryRequest, RecallMemoryRequest, SearchMemoryRequest
 
 
@@ -156,8 +157,47 @@ async def update_access_stats(memory_ids: list[str]):
         raise HTTPException(status_code=500, detail=str(e))
 
 # ------------Importance Scoring------------
-def score_memory(similarity: float, created_at: str) -> float:
+async def score_memory(similarity: float, created_at: str, access_count: int) -> float:
     created = datetime.fromisoformat(created_at)
     days_old = (datetime.now(timezone.utc) - created).days
     recency_score = 1 / (1 + days_old)
-    return (0.7 * similarity) + (0.3 * recency_score)
+    access_score = log1p(access_count) / 10
+    return (0.6 * similarity) + (0.25 * recency_score) + (0.15 * access_score)
+
+async def batch_update_scores_and_stats(points: list):
+    """
+    Computes custom scores for each point individually and updates their payloads 
+    in a single database round-trip.
+    """
+    try:
+        client = await get_qdrant_client()
+
+        operations = []
+        for point in points:
+            similarity = point.score 
+            created_at = point.payload.get("created_at")
+            current_count = point.payload.get("access_count", 0)
+            
+            importance_score = await score_memory(similarity, created_at, current_count)
+            
+            operations.append(
+                UpdateOperation.SetPayload(
+                    set_payload=SetPayloadOperation(
+                        points=[point.id],
+                        payload={
+                            "importance": importance_score,
+                            "last_accessed": datetime.now(timezone.utc).isoformat(),
+                            "access_count": current_count + 1
+                        }
+                    )
+                )
+            )
+
+        if operations:
+            client.batch_update_points(
+                collection_name="memories",
+                operations=operations
+            )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

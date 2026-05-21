@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ─── Embedding Model (cached) ─────────────────────────────────────────────────
+# ─── Embedding Model ─────────────────────────────────────────────────────────
 
 _embedding_model: SentenceTransformer | None = None
 
