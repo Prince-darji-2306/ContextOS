@@ -2,6 +2,7 @@ import uvicorn
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
+from mcp_server.server import mcp_router
 
 from repos import init_db , close_pool , init_collection
 from routers import auth_router, keys_router, memory_router
@@ -29,6 +30,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(keys_router)
 app.include_router(memory_router)
+app.mount("/mcp", mcp_router.sse_app())
 
 @app.get("/health")
 def read_root():

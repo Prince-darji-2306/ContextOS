@@ -30,6 +30,6 @@ class RecallMemoryRequest(BaseModel):
     filters: dict[str, Any] = {}
 
 class SearchMemoryRequest(BaseModel):
-    filters: dict[str, Any]
+    filters: dict[str, Any] = {}
     limit: int = 50
     offset: int = 0

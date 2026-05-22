@@ -3,7 +3,7 @@ from math import log1p
 from fastapi import HTTPException
 from datetime import datetime, timezone, timedelta
 from repos import get_qdrant_client , get_embedding 
-from qdrant_client.models import PointStruct, Filter, FieldCondition, MatchValue, PointIdsList, UpdateOperation, SetPayloadOperation
+from qdrant_client.models import PointStruct, Filter, FieldCondition, MatchValue, PointIdsList, UpdateOperation, SetPayload
 from schemas import WriteMemoryRequest, RecallMemoryRequest, SearchMemoryRequest
 
 
@@ -46,9 +46,17 @@ async def recall_memory(user_id : str , req : RecallMemoryRequest, embedding:boo
         client = await get_qdrant_client()
         query_embedding = await get_embedding(req.query)
         
-        filter_query = Filter(must=[
+        must_conditions = [
             FieldCondition(key="user_id", match=MatchValue(value=user_id))
-        ])
+        ]
+
+        if req.filters:
+            for key, value in req.filters.items():
+                must_conditions.append(
+                    FieldCondition(key=key, match=MatchValue(value=value))
+                )
+        
+        filter_query = Filter(must=must_conditions)
         
         results = client.query_points(
             collection_name="memories",
@@ -140,6 +148,7 @@ async def forget_memories(memory_ids : list[str]):
 
 
 # ------------Importance Scoring------------
+
 async def score_memory(similarity: float, created_at: str, access_count: int) -> float:
     created = datetime.fromisoformat(created_at)
     days_old = (datetime.now(timezone.utc) - created).days
@@ -165,7 +174,7 @@ async def batch_update_scores_and_stats(points: list):
             
             operations.append(
                 UpdateOperation.SetPayload(
-                    set_payload=SetPayloadOperation(
+                    set_payload=SetPayload(
                         points=[point.id],
                         payload={
                             "importance": importance_score,
