@@ -27,6 +27,7 @@ class WriteMemoryRequest(BaseModel):
 class RecallMemoryRequest(BaseModel):
     query: str
     top_k: int
+    filters: dict[str, Any] = {}
 
 class SearchMemoryRequest(BaseModel):
     filters: dict[str, Any]
