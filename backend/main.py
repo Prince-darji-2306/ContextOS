@@ -5,6 +5,7 @@ from mcp_server.server import mcp_router
 
 from repos import init_db , close_pool , init_collection
 from routers import auth_router, keys_router, memory_router
+from middleware import MCPSessionAuthMiddleware
 
 
 @asynccontextmanager
@@ -26,6 +27,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.add_middleware(MCPSessionAuthMiddleware)
 app.include_router(auth_router)
 app.include_router(keys_router)
 app.include_router(memory_router)

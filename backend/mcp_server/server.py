@@ -1,7 +1,6 @@
 from typing import Any
-from fastapi import Request
 from asyncio import create_task
-from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp import FastMCP, Context
 from services import create_memory,search_memory,recall_memory,forget_memories, batch_update_scores_and_stats
 
 # import sys
@@ -11,18 +10,21 @@ from schemas import WriteMemoryRequest, RecallMemoryRequest, SearchMemoryRequest
 
 mcp_router = FastMCP("ContextOS")
 
+active_mcp_sessions:dict[str, str] = {}
+
 @mcp_router.tool()
 async def remember(
+    ctx: Context,
     app_name : str,
     text: str,
     tags: list[str] = [],
     memory_type: str = "semantic",
-    ttl_days: int | None = None,
-    client_req: Request = None) -> dict:
+    ttl_days: int | None = None) -> dict:
 
     app_id = await resolve_app_id(app_name)
-    user_id = client_req.state.user_id
-
+    user_id = active_mcp_sessions.get(ctx.session_id)
+    if not user_id:
+        raise Exception("Unautorised MCP Session")
     req = WriteMemoryRequest(
         text=text,
         app_id=app_id,
@@ -34,12 +36,12 @@ async def remember(
 
 @mcp_router.tool()
 async def recall(
+    ctx: Context,
     query: str,
     top_k: int = 5,
-    filters: dict[str, Any] = {},
-    client_req: Request = None) -> dict:
+    filters: dict[str, Any] = {}) -> dict:
 
-    user_id = client_req.state.user_id
+    user_id = active_mcp_sessions.get(ctx.session_id)
     req = RecallMemoryRequest(
         query=query,
         top_k=top_k,
@@ -52,21 +54,21 @@ async def recall(
 
 @mcp_router.tool()
 async def search(
+    ctx: Context,
     filters: dict[str, Any] = {},
     limit: int = 50,
-    offset: int = 0,
-    client_req: Request = None) -> dict:
+    offset: int = 0) -> dict:
             
-    user_id = client_req.state.user_id
+    user_id = active_mcp_sessions.get(ctx.session_id)
     req = SearchMemoryRequest(filters=filters, offset=offset, limit=limit)
     return await search_memory(user_id, req)
 
 @mcp_router.tool()
 async def forget(
-    memory_ids: list[str],
-    client_req: Request = None) -> dict:
+    ctx: Context,
+    memory_ids: list[str]) -> dict:
 
-    user_id = client_req.state.user_id
+    user_id = active_mcp_sessions.get(ctx.session_id)
     return await forget_memories(user_id,memory_ids)
 
 

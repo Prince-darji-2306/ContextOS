@@ -5,4 +5,5 @@ from .auth_key import (
     decode_token,
     get_current_user,
     create_user_api_key,
+    fetch_user_id
 )

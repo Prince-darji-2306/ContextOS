@@ -7,7 +7,8 @@ from .postgres import (
     create_user,
     get_user_api_keys,
     remove_user_api_key,
-    )
+    get_stored_api_key_hash
+)
 
 from .qdrant import (
     init_collection,

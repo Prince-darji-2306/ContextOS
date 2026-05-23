@@ -2,11 +2,12 @@ import bcrypt
 import secrets
 from jose import jwt
 from dotenv import load_dotenv
+from functools import lru_cache
 from jose.exceptions import JWTError
 from fastapi import HTTPException, Header
 from datetime import datetime, timedelta, timezone
 
-from repos import store_api_key
+from repos import store_api_key, get_stored_api_key_hash
 
 import os
 
@@ -64,3 +65,13 @@ async def create_user_api_key(user_id: str , app_id: str , app_name: str , ttl_d
     await store_api_key(user_id, app_id, app_name, key_prefix, hashed_key, ttl_days)
 
     return key
+
+@lru_cache(maxsize=1024)
+async def fetch_user_id(api_key: str) -> str | None:
+    prefix = api_key[:api_key.rfind('.')] + '.'
+    stored_hash = await get_stored_api_key_hash(prefix)
+    
+    if stored_hash and verify_password(api_key, stored_hash["key_hash"]):
+        return stored_hash["id"]
+    
+    return None
