@@ -1,1 +1,1 @@
-from .mcp_session_auth import MCPSessionAuthMiddleware
+from .mcp_session_auth import MCPSessionAuthWrapper
