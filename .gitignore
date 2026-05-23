@@ -8,6 +8,7 @@ backend/utils/__pycache__
 backend/core/__pycache__
 backend/schemas/__pycache__
 backend/services/__pycache__
+backend/mcp_server/__pycache__
 
 frontend/node_modules
 frontend/.vite
