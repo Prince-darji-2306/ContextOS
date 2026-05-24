@@ -20,7 +20,7 @@ async def generate_api_key(req : GenerateAPIKeyRequest , user_id : str = Depends
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get('/list')
-async def get_user_api_keys(user_id : str = Depends(get_current_user)):
+async def list_user_api_keys(user_id : str = Depends(get_current_user)):
     try:
         keys = await get_user_api_keys(user_id)
         return {

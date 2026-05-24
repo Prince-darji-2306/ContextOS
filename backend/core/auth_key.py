@@ -54,7 +54,7 @@ async def get_current_user(authorization: str = Header(...)) -> str:
 
 async def create_user_api_key(user_id: str , app_id: str , app_name: str , ttl_days: int = 7):
 
-    random_secret = secrets.token_urlsafe(48)
+    random_secret = secrets.token_urlsafe(32)
     prefix_secret = secrets.token_urlsafe(12)
     
     key_prefix = "ctx." + prefix_secret + "."
