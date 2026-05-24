@@ -11,12 +11,6 @@ class RegisterRequest(BaseModel):
     email: str
     password: str
 
-
-class GenerateAPIKeyRequest(BaseModel):
-    app_id: str
-    app_name: str
-    ttl_days: int | None = None
-
 class WriteMemoryRequest(BaseModel):
     app_id: str
     text: str
