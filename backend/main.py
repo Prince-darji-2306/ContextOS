@@ -1,3 +1,6 @@
+import logging
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware

@@ -3,7 +3,7 @@ from math import log1p
 from fastapi import HTTPException
 from datetime import datetime, timezone, timedelta
 from repos import get_qdrant_client , get_embedding 
-from qdrant_client.models import PointStruct, Filter, FieldCondition, MatchValue, PointIdsList, UpdateOperation, SetPayload
+from qdrant_client.models import PointStruct, Filter, FieldCondition, MatchValue, PointIdsList, SetPayloadOperation, SetPayload
 from schemas import WriteMemoryRequest, RecallMemoryRequest, SearchMemoryRequest
 
 
@@ -62,7 +62,7 @@ async def recall_memory(user_id : str , req : RecallMemoryRequest, embedding:boo
             collection_name="memories",
             query=query_embedding,
             limit=req.top_k,
-            filter=filter_query,
+            query_filter=filter_query,
             with_payload=True,
             with_vectors=False,
         )
@@ -94,7 +94,7 @@ async def search_memory(user_id : str , req : SearchMemoryRequest):
 
         results = client.scroll(
             collection_name="memories",
-            filter=filter_query,
+            scroll_filter=filter_query,
             with_payload=True,
             with_vectors=False,
             limit=req.limit,
@@ -109,7 +109,7 @@ async def search_memory(user_id : str , req : SearchMemoryRequest):
 
 async def check_duplicates(query: str, user_id: str, threshold = 0.85):
     try:
-        results, query_embedding = await recall_memory(user_id,RecallMemoryRequest(query=query, top_k=1), embedding=True)
+        results, query_embedding = await recall_memory(user_id, RecallMemoryRequest(query=query, filters={}, top_k=1), embedding=True)
         if results.points:
             memory = results.points[0]
             if memory.score >= threshold:
@@ -173,7 +173,7 @@ async def batch_update_scores_and_stats(points: list):
             importance_score = await score_memory(similarity, created_at, current_count)
             
             operations.append(
-                UpdateOperation.SetPayload(
+                SetPayloadOperation(
                     set_payload=SetPayload(
                         points=[point.id],
                         payload={
@@ -188,8 +188,8 @@ async def batch_update_scores_and_stats(points: list):
         if operations:
             client.batch_update_points(
                 collection_name="memories",
-                operations=operations
+                update_operations=operations
             )
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f'ERROR : {e}')

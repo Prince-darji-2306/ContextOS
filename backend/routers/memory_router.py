@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from core import get_current_user
-from services import create_memory, recall_memory, search_memory, batch_update_scores_and_stats, forget_memories
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from schemas import WriteMemoryRequest, RecallMemoryRequest, SearchMemoryRequest
+from services import create_memory, recall_memory, search_memory, batch_update_scores_and_stats, forget_memories
 
 router = APIRouter(prefix='/memories', tags=['memories'])
 
@@ -14,7 +14,7 @@ async def write_user_memories(req : WriteMemoryRequest, user_id: str = Depends(g
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get('/recall')
+@router.post('/recall')
 async def recall_user_memories(req : RecallMemoryRequest, bgtasks: BackgroundTasks, user_id: str = Depends(get_current_user)):
     try:
         result = await recall_memory(user_id, req)
