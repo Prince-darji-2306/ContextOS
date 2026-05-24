@@ -2,12 +2,13 @@ import bcrypt
 import secrets
 from jose import jwt
 from dotenv import load_dotenv
+from asyncio import create_task
 from functools import lru_cache
 from jose.exceptions import JWTError
 from fastapi import HTTPException, Header
 from datetime import datetime, timedelta, timezone
 
-from repos import store_api_key, get_stored_api_key_hash
+from repos import store_api_key, get_stored_api_key_hash, update_api_usage
 
 import os
 
@@ -72,6 +73,8 @@ async def fetch_user_id(api_key: str) -> str | None:
     stored_hash = await get_stored_api_key_hash(prefix)
     
     if stored_hash and verify_password(api_key, stored_hash["key_hash"]):
-        return stored_hash["id"]
-    
+        create_task(update_api_usage(stored_hash["id"]))
+        
+        return stored_hash["user_id"]
+
     return None
