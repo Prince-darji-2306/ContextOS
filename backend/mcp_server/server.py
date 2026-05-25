@@ -10,7 +10,9 @@ from schemas import WriteMemoryRequest, RecallMemoryRequest, SearchMemoryRequest
 
 mcp_router = FastMCP("ContextOS")
 
-active_mcp_sessions:dict[str, str] = {}
+from contextvars import ContextVar
+
+current_user_id: ContextVar[str | None] = ContextVar("current_user_id", default=None)
 
 @mcp_router.tool()
 async def remember(
@@ -22,7 +24,7 @@ async def remember(
     ttl_days: int | None = None) -> dict:
 
     app_id = await resolve_app_id(app_name)
-    user_id = active_mcp_sessions.get(ctx.session_id)
+    user_id = current_user_id.get()
     if not user_id:
         raise Exception("Unautorised MCP Session")
     req = WriteMemoryRequest(
@@ -41,7 +43,7 @@ async def recall(
     top_k: int = 5,
     filters: dict[str, Any] = {}) -> dict:
 
-    user_id = active_mcp_sessions.get(ctx.session_id)
+    user_id = current_user_id.get()
     req = RecallMemoryRequest(
         query=query,
         top_k=top_k,
@@ -59,7 +61,7 @@ async def search(
     limit: int = 50,
     offset: int = 0) -> dict:
             
-    user_id = active_mcp_sessions.get(ctx.session_id)
+    user_id = current_user_id.get()
     req = SearchMemoryRequest(filters=filters, offset=offset, limit=limit)
     return await search_memory(user_id, req)
 
@@ -68,8 +70,7 @@ async def forget(
     ctx: Context,
     memory_ids: list[str]) -> dict:
 
-    user_id = active_mcp_sessions.get(ctx.session_id)
-    return await forget_memories(user_id,memory_ids)
+    return await forget_memories(memory_ids)
 
 
 async def resolve_app_id(app_name: str) -> str:
