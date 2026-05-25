@@ -141,7 +141,7 @@ async def remove_user_api_key(user_id: str, id: str):
 
 async def get_stored_api_key_hash(prefix:str):
     pool = await get_pool()
-    async with pool.aqquire() as conn:
+    async with pool.acquire() as conn:
         result = await conn.fetchrow('SELECT id, user_id, key_hash FROM api_keys WHERE key_prefix = $1', prefix)
     if result: return result
     return None

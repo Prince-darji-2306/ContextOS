@@ -1,5 +1,7 @@
 import logging
 logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("mcp").setLevel(logging.WARNING)
+logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
 
 from fastapi import FastAPI
 from contextlib import asynccontextmanager

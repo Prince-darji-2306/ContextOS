@@ -3,7 +3,7 @@ import secrets
 from jose import jwt
 from dotenv import load_dotenv
 from asyncio import create_task
-from functools import lru_cache
+from async_lru import alru_cache
 from jose.exceptions import JWTError
 from fastapi import HTTPException, Header
 from datetime import datetime, timedelta, timezone
@@ -53,7 +53,7 @@ async def get_current_user(authorization: str = Header(...)) -> str:
 
 # ------------- API Key Generation & Storage ----------------
 
-async def create_user_api_key(user_id: str , app_id: str , app_name: str , ttl_days: int = 7):
+async def create_user_api_key(user_id: str , ttl_days: int = 7):
 
     random_secret = secrets.token_urlsafe(32)
     prefix_secret = secrets.token_urlsafe(12)
@@ -63,11 +63,11 @@ async def create_user_api_key(user_id: str , app_id: str , app_name: str , ttl_d
 
     hashed_key = hash_password(key)
     
-    await store_api_key(user_id, app_id, app_name, key_prefix, hashed_key, ttl_days)
+    await store_api_key(user_id, key_prefix, hashed_key, ttl_days)
 
     return key
 
-@lru_cache(maxsize=1024)
+@alru_cache(maxsize=1024)
 async def fetch_user_id(api_key: str) -> str | None:
     prefix = api_key[:api_key.rfind('.')] + '.'
     stored_hash = await get_stored_api_key_hash(prefix)
@@ -75,6 +75,6 @@ async def fetch_user_id(api_key: str) -> str | None:
     if stored_hash and verify_password(api_key, stored_hash["key_hash"]):
         create_task(update_api_usage(stored_hash["id"]))
         
-        return stored_hash["user_id"]
+        return str(stored_hash["user_id"])
 
     return None
