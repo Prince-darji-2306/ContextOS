@@ -90,7 +90,6 @@ async def search_memory(user_id : str , req : SearchMemoryRequest, with_vectors:
                 )
         
         filter_query = Filter(must=must_conditions)
-        if with_vectors: req.limit = 10000        
 
         results = client.scroll(
             collection_name="memories",

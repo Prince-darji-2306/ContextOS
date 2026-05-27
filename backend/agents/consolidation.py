@@ -3,10 +3,10 @@ import numpy as np
 from groq import AsyncGroq
 from services import search_memory, forget_memories, create_memory
 from schemas import WriteMemoryRequest, SearchMemoryRequest
-from repos.postgres import insert_agent_log
+from repos import insert_agent_log
 
 async def run_consolidation_agent(user_id: str) -> list[str]:
-    points = await search_memory(user_id, SearchMemoryRequest(), with_vectors=True)
+    points = await search_memory(user_id, SearchMemoryRequest(limit=10000), with_vectors=True)
     if not points or len(points) < 2:
         return []
         
