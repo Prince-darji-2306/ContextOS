@@ -8,7 +8,8 @@ from .postgres import (
     get_user_api_keys,
     remove_user_api_key,
     get_stored_api_key_hash,
-    update_api_usage
+    update_api_usage,
+    insert_agent_log,
 )
 
 from .qdrant import (

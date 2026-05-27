@@ -150,3 +150,28 @@ async def update_api_usage(id: str):
     pool = await get_pool()
     async with pool.acquire() as conn:
         await conn.execute("UPDATE api_keys SET last_used = NOW() WHERE id = $1", id)
+
+
+#-------------Agent Logs Functions----------------
+async def insert_agent_log(agent_name: str, user_id: str, action: str, memory_ids: list[str], status: str):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            INSERT INTO agent_logs (agent_name, user_id, action, memory_ids, status)
+            VALUES ($1, $2, $3, $4, $5)
+            """,
+            agent_name, user_id, action, memory_ids, status
+        )
+
+async def get_agent_logs(user_id: str, limit: int = 20):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("SELECT * FROM agent_logs WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2", user_id, limit)
+    return [dict(row) for row in rows]
+
+async def get_agent_log_by_id(id: str):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        result = await conn.fetchrow("SELECT * FROM agent_logs WHERE id = $1", id)
+    return dict(result) if result else None
