@@ -75,7 +75,7 @@ async def recall_memory(user_id : str , req : RecallMemoryRequest, embedding:boo
         raise HTTPException(status_code=500, detail=str(e))
 
 
-async def search_memory(user_id : str , req : SearchMemoryRequest):
+async def search_memory(user_id : str , req : SearchMemoryRequest, with_vectors: bool = False):
     try:
         client = await get_qdrant_client()
 
@@ -90,13 +90,13 @@ async def search_memory(user_id : str , req : SearchMemoryRequest):
                 )
         
         filter_query = Filter(must=must_conditions)
-        
+        if with_vectors: req.limit = 10000        
 
         results = client.scroll(
             collection_name="memories",
             scroll_filter=filter_query,
             with_payload=True,
-            with_vectors=False,
+            with_vectors=with_vectors,
             limit=req.limit,
             offset=req.offset,
         )
