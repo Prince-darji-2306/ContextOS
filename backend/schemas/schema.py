@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, TypedDict
 from pydantic import BaseModel
 
 
@@ -27,3 +27,11 @@ class SearchMemoryRequest(BaseModel):
     filters: dict[str, Any] = {}
     limit: int = 50
     offset: int = 0
+
+class AgentState(TypedDict):
+    user_id: str
+    task: str
+    memory_ids: list[str]
+    status: str
+    retries: int
+    result: dict

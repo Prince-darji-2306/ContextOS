@@ -6,7 +6,7 @@ from schemas import SearchMemoryRequest, WriteMemoryRequest
 from services import search_memory, forget_memories, create_memory
 
 
-async def run_summerization_agent(user_id : str , time_period_in_days : int = 30):
+async def run_summarization_agent(user_id : str , time_period_in_days : int = 30):
     try:
         memories = await search_memory(user_id, SearchMemoryRequest(limit=10000, filters={"memory_type":"episodic","timestamp": {"$gte": time.time() - (time_period_in_days * 24 * 60 * 60)}}))
         memories_text = "\n".join([f"- {m.payload['content']}" for m in memories])

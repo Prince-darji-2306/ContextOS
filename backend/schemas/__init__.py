@@ -1,1 +1,8 @@
-from .schema import LoginRequest, RegisterRequest, WriteMemoryRequest , RecallMemoryRequest , SearchMemoryRequest
+from .schema import (
+    LoginRequest,
+    RegisterRequest,
+    WriteMemoryRequest,
+    RecallMemoryRequest,
+    SearchMemoryRequest,
+    AgentState
+)
