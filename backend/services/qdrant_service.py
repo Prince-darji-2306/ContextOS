@@ -192,3 +192,22 @@ async def batch_update_scores_and_stats(points: list):
 
     except Exception as e:
         print(f'ERROR : {e}')
+
+
+async def get_expired_memories_id(user_id:str):
+    client = await get_qdrant_client()
+    now_iso = datetime.now(timezone.utc).isoformat()
+    
+    filter_query = Filter(
+        must=[
+            FieldCondition(key="user_id", match=MatchValue(value=user_id)),
+            FieldCondition(key="ttl", range={"lt": now_iso})
+        ]
+    )
+    results = client.scroll(
+        collection_name="memories",
+        scroll_filter=filter_query,
+        with_payload=True,
+        limit=10000
+    )
+    return [str(p.id) for p in results[0]]
