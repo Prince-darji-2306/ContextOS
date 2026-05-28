@@ -10,7 +10,7 @@ from mcp_server.server import mcp_router
 
 from middleware import MCPSessionAuthWrapper
 from repos import init_db , close_pool , init_collection
-from routers import auth_router, keys_router, memory_router
+from routers import auth_router, keys_router, memory_router, jobs_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -34,6 +34,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(keys_router)
 app.include_router(memory_router)
+app.include_router(jobs_router)
 app.mount("/mcp", MCPSessionAuthWrapper(mcp_router.sse_app()))
 
 @app.get("/health")
