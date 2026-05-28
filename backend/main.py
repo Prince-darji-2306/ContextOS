@@ -26,10 +26,10 @@ async def lifespan(app: FastAPI):
     await init_db()
     await init_collection()
     
-    scheduler.add_job(scheduled_decay, "interval", minutes=10)
-    scheduler.add_job(scheduled_scorer, "interval", hours=6)
-    scheduler.add_job(scheduled_consolidation, "interval", hours=1)
-    scheduler.add_job(scheduled_summarisation, "interval", hours=24)
+    scheduler.add_job(scheduled_consolidation,  "interval", hours=1)
+    scheduler.add_job(scheduled_scorer,         "interval", hours=6)
+    scheduler.add_job(scheduled_summarisation,  "interval", hours=24)
+    scheduler.add_job(scheduled_decay,          "interval", minutes=10)
     scheduler.start()
 
     yield
