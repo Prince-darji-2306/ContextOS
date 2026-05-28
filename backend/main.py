@@ -4,20 +4,37 @@ logging.getLogger("mcp").setLevel(logging.WARNING)
 logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
 
 from fastapi import FastAPI
+from mcp_server.server import mcp_router
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
-from mcp_server.server import mcp_router
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from middleware import MCPSessionAuthWrapper
+from core import (
+    scheduled_decay,
+    scheduled_scorer,
+    scheduled_consolidation,
+    scheduled_summarisation
+)
 from repos import init_db , close_pool , init_collection
 from routers import auth_router, keys_router, memory_router, jobs_router
+
+scheduler = AsyncIOScheduler()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
     await init_collection()
+    
+    scheduler.add_job(scheduled_decay, "interval", minutes=10)
+    scheduler.add_job(scheduled_scorer, "interval", hours=6)
+    scheduler.add_job(scheduled_consolidation, "interval", hours=1)
+    scheduler.add_job(scheduled_summarisation, "interval", hours=24)
+    scheduler.start()
+
     yield
 
+    scheduler.shutdown()
     await close_pool()
 
 

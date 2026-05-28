@@ -175,3 +175,10 @@ async def get_agent_log_by_id(id: str):
     async with pool.acquire() as conn:
         result = await conn.fetchrow("SELECT * FROM agent_logs WHERE id = $1", id)
     return dict(result) if result else None
+
+
+async def get_all_users() -> list[str]:
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("SELECT id FROM users")
+    return [str(row['id']) for row in rows]
