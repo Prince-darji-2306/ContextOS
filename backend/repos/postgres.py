@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS memory_conflicts (
     memory_b_id   UUID NOT NULL,
     memory_b_text TEXT NOT NULL,
     similarity    DOUBLE PRECISION NOT NULL,
-    status        TEXT DEFAULT 'pending',
+    action        TEXT DEFAULT 'pending',
     created_at    TIMESTAMPTZ DEFAULT NOW(),
     resolved_at   TIMESTAMPTZ,
     
@@ -199,3 +199,51 @@ async def get_all_users() -> list[str]:
     async with pool.acquire() as conn:
         rows = await conn.fetch("SELECT id FROM users")
     return [str(row['id']) for row in rows]
+
+#----------- Memory Conflicts -----------------
+async def fetch_pending_conflicts(user_id: str):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT * FROM memory_conflicts WHERE user_id = $1 AND action = 'pending' ORDER BY similarity DESC",
+            user_id
+        )
+    return [dict(row) for row in rows]
+
+async def resolve_memory_conflict(conflict_id: str, user_id: str, action:str):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            UPDATE memory_conflicts 
+            SET action = $1, resolved_at = NOW() 
+            WHERE id = $2 AND user_id = $3
+            """,
+            action,
+            conflict_id,
+            user_id
+        )
+
+async def insert_memory_conflicts_batch(user_id: str, conflicts: list[dict]):
+    pool = await get_pool()
+    data = [
+        (
+            user_id,
+            c["memory_a_id"],
+            c["memory_a_text"],
+            c["memory_b_id"],
+            c["memory_b_text"],
+            c["similarity"]
+        )
+        for c in conflicts
+    ]
+    
+    async with pool.acquire() as conn:
+        await conn.executemany(
+            """
+            INSERT INTO memory_conflicts (user_id, memory_a_id, memory_a_text, memory_b_id, memory_b_text, similarity)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (memory_a_id, memory_b_id) DO NOTHING
+            """,
+            data
+        )

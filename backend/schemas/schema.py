@@ -28,6 +28,11 @@ class SearchMemoryRequest(BaseModel):
     limit: int = 50
     offset: int = 0
 
+class ConflitMemoryRequest(BaseModel):
+    conflict_id: str
+    memory_id: str
+    action: str
+
 class AgentState(TypedDict):
     user_id: str
     task: str

@@ -10,7 +10,10 @@ from .postgres import (
     get_stored_api_key_hash,
     update_api_usage,
     insert_agent_log,
-    get_all_users
+    get_all_users,
+    fetch_pending_conflicts,
+    resolve_memory_conflict, 
+    insert_memory_conflicts_batch
 )
 
 from .qdrant import (

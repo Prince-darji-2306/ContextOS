@@ -2,7 +2,7 @@ import os
 import asyncio
 import numpy as np
 from groq import AsyncGroq
-from repos import insert_agent_log
+from repos import insert_agent_log, insert_memory_conflicts_batch
 from services import search_memory, forget_memories, create_memory
 from schemas import WriteMemoryRequest, SearchMemoryRequest
 
@@ -14,7 +14,6 @@ async def run_consolidation_agent(user_id: str) -> list[str]:
     if not points or len(points) < 2:
         return []
         
-    # Vectorized similarity matrix calculation
     X = np.array([p.vector for p in points])
     norms = np.linalg.norm(X, axis=1, keepdims=True)
     norms[norms == 0] = 1.0
@@ -22,6 +21,7 @@ async def run_consolidation_agent(user_id: str) -> list[str]:
     S = np.dot(X_normalized, X_normalized.T)
     
     merged_ids = []
+    conflicts_to_create = []
     merge_tasks = []
     duplicate_groups = []
     
@@ -32,27 +32,41 @@ async def run_consolidation_agent(user_id: str) -> list[str]:
         if points[i].id in merged_ids:
             continue
             
-        # Instantly find all index indices where similarity > 0.85
-        dup_indices = np.where(S[i] > 0.85)[0]
+        # Search >= 0.82 to capture both Auto-Merges (>0.85) and Conflicts (0.82 - 0.85)
+        dup_indices = np.where(S[i] >= 0.82)[0]
         duplicates = []
         
         for idx in dup_indices:
             idx = int(idx)
-            if idx <= i: # Avoid self-similarity and duplicate group checks
+            if idx <= i or points[idx].id in merged_ids:
                 continue
-            if points[idx].id in merged_ids:
+            if points[i].payload.get("memory_type") != points[idx].payload.get("memory_type"):
                 continue
-            if points[i].payload.get("memory_type") == points[idx].payload.get("memory_type"):
+                
+            similarity = S[i, idx]
+            
+            # --- 2. BORDERLINE CONFLICT (0.82 <= similarity <= 0.85) ---
+            if similarity <= 0.85:
+                conflicts_to_create.append({
+                    "memory_a_id": points[i].id,
+                    "memory_a_text": points[i].payload["content"],
+                    "memory_b_id": points[idx].id,
+                    "memory_b_text": points[idx].payload["content"],
+                    "similarity": float(similarity)
+                })
+                # Mark as processed for this run to prevent double-matching
+                merged_ids.append(points[idx].id)
+            
+            # --- 3. AUTO-MERGE (> 0.85) ---
+            else:
                 duplicates.append(points[idx])
                 
         if duplicates:
             duplicates.append(points[i])
-            # Track which IDs are being merged
             dup_ids = [d.id for d in duplicates]
             merged_ids.extend(dup_ids)
             duplicate_groups.append(duplicates)
             
-            # Prepare LLM Prompts
             content_list = [f"- {d.payload['content']}" for d in duplicates]
             combined_text = "\n".join(content_list)
             
@@ -64,21 +78,21 @@ async def run_consolidation_agent(user_id: str) -> list[str]:
             Output ONLY the clean, combined memory text. No preamble, no quotes, no notes.
             """
             
-            # Create the task (do NOT await it yet!)
             task = llm.chat.completions.create(
                 messages=[{"role": "user", "content": prompt}],
                 model="llama3-8b-8192"
             )
             merge_tasks.append(task)
             
+    # --- 4. EXECUTE BATCH CONFLICT WRITE IN A SINGLE ROUND-TRIP ---
+    if conflicts_to_create:
+        await insert_memory_conflicts_batch(user_id, conflicts_to_create)
+            
     if not merge_tasks:
         return []
         
-    # Execute all LLM calls concurrently!
-    # A N-second sequential wait is condensed to the duration of the single slowest call (approx. 1s).
     llm_responses = await asyncio.gather(*merge_tasks)
     
-    # Process completions and batch write/delete in background
     for idx, response in enumerate(llm_responses):
         merged_content = response.choices[0].message.content.strip()
         duplicates = duplicate_groups[idx]
@@ -97,3 +111,4 @@ async def run_consolidation_agent(user_id: str) -> list[str]:
         await insert_agent_log("consolidation_agent", user_id, "merged_duplicates", dup_ids, "success")
         
     return merged_ids
+
