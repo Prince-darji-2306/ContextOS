@@ -62,6 +62,22 @@ CREATE TABLE IF NOT EXISTS agent_logs (
     created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS memory_conflicts (
+    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id       UUID REFERENCES users(id) ON DELETE CASCADE,
+    memory_a_id   UUID NOT NULL,
+    memory_a_text TEXT NOT NULL,
+    memory_b_id   UUID NOT NULL,
+    memory_b_text TEXT NOT NULL,
+    similarity    DOUBLE PRECISION NOT NULL,
+    status        TEXT DEFAULT 'pending',
+    created_at    TIMESTAMPTZ DEFAULT NOW(),
+    resolved_at   TIMESTAMPTZ,
+    
+    CONSTRAINT unique_conflict_pair UNIQUE(memory_a_id, memory_b_id)
+);
+
+
 --Indexes
 CREATE INDEX IF NOT EXISTS idx_users_id ON users(id);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
@@ -71,6 +87,7 @@ CREATE INDEX IF NOT EXISTS idx_app_registry_id ON app_registry(id);
 CREATE INDEX IF NOT EXISTS idx_app_registry_user_id ON app_registry(user_id);
 CREATE INDEX IF NOT EXISTS idx_agent_logs_id ON agent_logs(id);
 CREATE INDEX IF NOT EXISTS idx_agent_logs_user_id ON agent_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_conflicts_user_pending ON memory_conflicts(user_id, status);
 
 """
 
