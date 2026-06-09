@@ -5,9 +5,9 @@ from repos import get_user_api_keys, remove_user_api_key
 router = APIRouter(prefix="/api-key" , tags=["API Keys"])
 
 @router.post("/new")
-async def generate_api_key(ttl_days: int | None = None, user_id : str = Depends(get_current_user)):
+async def generate_api_key(api_name: str, ttl_days: int | None = None, user_id : str = Depends(get_current_user)):
     try:
-        key = await create_user_api_key(user_id, ttl_days)
+        key = await create_user_api_key(user_id, api_name, ttl_days)
         return {
             "key": key,
             "user_id": user_id,

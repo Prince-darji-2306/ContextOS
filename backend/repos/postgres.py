@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS api_keys (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id     UUID REFERENCES users(id) ON DELETE CASCADE,
+    app_name    TEXT NOT NULL,
     key_hash    TEXT UNIQUE NOT NULL,
     key_prefix  TEXT NOT NULL,
     created_at  TIMESTAMPTZ DEFAULT NOW(),
@@ -133,15 +134,15 @@ async def get_user_by_id(id : str) -> dict | None:
 
 
 # ------------- API Key Functions ----------------
-async def store_api_key(user_id: str, key_prefix: str, hashed_key: str, ttl_days: int):
+async def store_api_key(user_id: str, api_name: str, ttl_days: int, key_prefix: str, hashed_key: str):
     pool = await get_pool()
     async with pool.acquire() as conn:
         await conn.execute(
             """
-            INSERT INTO api_keys (user_id, key_prefix, key_hash, ttl_days)
-            VALUES ($1, $2, $3, $4)
+            INSERT INTO api_keys (user_id, api_name, key_hash, key_prefix, ttl_days)
+            VALUES ($1, $2, $3, $4, $5)
             """,
-            user_id, key_prefix, hashed_key, ttl_days
+            user_id, api_name, hashed_key, key_prefix, ttl_days
         )
 
 async def get_user_api_keys(user_id: str, ):
