@@ -1,0 +1,304 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --background-secondary: 0 0% 98%;
+    --background-tertiary: 0 0% 96%;
+    --surface: 0 0% 100%;
+    --surface-hover: 0 0% 96%;
+    --surface-active: 0 0% 92%;
+    --border: 0 0% 90%;
+    --border-hover: 0 0% 80%;
+    --border-glow: 240 5% 64%;
+    --text: 240 10% 3.9%;
+    --text-secondary: 240 3.8% 46.1%;
+    --text-tertiary: 240 5% 64%;
+    --text-inverse: 0 0% 100%;
+    --accent: 240 5.9% 10%;
+    --accent-hover: 240 5.9% 20%;
+    --accent-subtle: 240 4.8% 95.9%;
+    --accent-glow: 240 5% 64%;
+    --success: 142 76% 36%;
+    --success-subtle: 142 76% 96%;
+    --warning: 38 92% 50%;
+    --warning-subtle: 38 92% 96%;
+    --danger: 0 84% 60%;
+    --danger-subtle: 0 84% 96%;
+    --memory-fact: 221 83% 53%;
+    --memory-preference: 262 83% 58%;
+    --memory-context: 173 80% 40%;
+    --memory-emotion: 330 81% 60%;
+    --agent-active: 142 76% 36%;
+    --agent-idle: 38 92% 50%;
+    --agent-error: 0 84% 60%;
+
+    --foreground: 240 10% 3.9%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --violet: 262 83% 58%;
+    --teal: 173 80% 40%;
+    --amber: 38 92% 50%;
+    --danger: 0 84% 60%;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --background-secondary: 240 6% 8%;
+    --background-tertiary: 240 4% 12%;
+    --surface: 240 6% 10%;
+    --surface-hover: 240 6% 14%;
+    --surface-active: 240 6% 18%;
+    --border: 240 4% 16%;
+    --border-hover: 240 4% 24%;
+    --border-glow: 240 5% 64%;
+    --text: 0 0% 98%;
+    --text-secondary: 240 5% 64%;
+    --text-tertiary: 240 4% 46%;
+    --text-inverse: 240 10% 3.9%;
+    --accent: 0 0% 98%;
+    --accent-hover: 240 5% 90%;
+    --accent-subtle: 240 4% 16%;
+    --accent-glow: 240 5% 64%;
+    --success: 142 76% 36%;
+    --success-subtle: 142 76% 12%;
+    --warning: 38 92% 50%;
+    --warning-subtle: 38 92% 12%;
+    --danger: 0 84% 60%;
+    --danger-subtle: 0 84% 12%;
+    --memory-fact: 217 91% 60%;
+    --memory-preference: 262 83% 58%;
+    --memory-context: 173 80% 40%;
+    --memory-emotion: 330 81% 60%;
+    --agent-active: 142 76% 36%;
+    --agent-idle: 38 92% 50%;
+    --agent-error: 0 84% 60%;
+
+    --foreground: 0 0% 98%;
+    --muted: 240 4% 16%;
+    --muted-foreground: 240 5% 64%;
+    --violet: 262 83% 65%;
+    --teal: 173 70% 50%;
+    --amber: 38 92% 55%;
+    --danger: 0 84% 60%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-text antialiased;
+    font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03";
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  ::selection {
+    @apply bg-accent/20 text-text;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-border-hover;
+  }
+}
+
+@layer components {
+  .glass {
+    background: hsl(var(--surface) / 80%);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid hsl(var(--border) / 70%);
+  }
+
+  .glass-strong {
+    @apply backdrop-blur-2xl bg-surface/90 border border-border/60;
+  }
+
+  .glass-subtle {
+    @apply backdrop-blur-lg bg-surface/60 border border-border/30;
+  }
+
+  .glow-border {
+    @apply border border-border-hover shadow-glow;
+  }
+
+  .card-base {
+    @apply rounded-2xl border border-border bg-surface/50 backdrop-blur-sm transition-all duration-300;
+  }
+
+  .card-hover {
+    @apply hover:border-border-hover hover:bg-surface-hover/80 hover:shadow-card-hover hover:-translate-y-0.5;
+  }
+
+  .btn-base {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply btn-base bg-accent text-text-inverse hover:bg-accent-hover shadow-lg shadow-accent/20 hover:shadow-accent/30;
+  }
+
+  .btn-secondary {
+    @apply btn-base bg-surface border border-border text-text hover:bg-surface-hover hover:border-border-hover;
+  }
+
+  .btn-ghost {
+    @apply btn-base text-text-secondary hover:text-text hover:bg-surface-hover;
+  }
+
+  .btn-danger {
+    @apply btn-base bg-danger/10 text-danger hover:bg-danger/20 border border-danger/20;
+  }
+
+  .input-base {
+    @apply w-full rounded-xl border border-border bg-surface/50 px-4 py-3 text-text placeholder:text-text-tertiary transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-border-hover;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium;
+  }
+
+  .badge-success {
+    @apply badge bg-success-subtle text-success;
+  }
+
+  .badge-warning {
+    @apply badge bg-warning-subtle text-warning;
+  }
+
+  .badge-danger {
+    @apply badge bg-danger-subtle text-danger;
+  }
+
+  .badge-info {
+    @apply badge bg-accent-subtle text-text-secondary;
+  }
+
+  .shimmer {
+    @apply relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer before:bg-gradient-to-r before:from-transparent before:via-surface-hover before:to-transparent;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-accent via-accent-hover to-accent bg-clip-text text-transparent;
+  }
+
+  .gradient-text-animated {
+    @apply bg-gradient-to-r from-accent via-accent-hover to-accent bg-[length:200%_auto] animate-shimmer bg-clip-text text-transparent;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .animate-delay-100 { animation-delay: 100ms; }
+  .animate-delay-200 { animation-delay: 200ms; }
+  .animate-delay-300 { animation-delay: 300ms; }
+  .animate-delay-400 { animation-delay: 400ms; }
+  .animate-delay-500 { animation-delay: 500ms; }
+
+  .glass-hover {
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease, background-color 0.25s ease;
+  }
+  .glass-hover:hover {
+    background: hsl(var(--surface) / 92%);
+    border-color: hsl(var(--text) / 18%);
+    box-shadow: 0 18px 40px -22px hsl(var(--text) / 30%);
+    transform: translateY(-2px);
+  }
+
+  .card-shadow {
+    box-shadow:
+      0 1px 0 0 hsl(var(--text) / 3%) inset,
+      0 8px 24px -12px hsl(var(--text) / 14%),
+      0 2px 6px -2px hsl(var(--text) / 8%);
+  }
+  .dark .card-shadow {
+    box-shadow:
+      0 1px 0 0 rgba(255, 255, 255, 0.04) inset,
+      0 20px 50px -20px rgba(0, 0, 0, 0.6),
+      0 4px 12px -4px rgba(0, 0, 0, 0.4);
+  }
+
+  .gradient-text {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--text)) 0%,
+      hsl(var(--text) / 55%) 50%,
+      hsl(var(--text)) 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: gradient-shimmer 6s linear infinite;
+  }
+  @keyframes gradient-shimmer {
+    0%   { background-position: 0% center; }
+    100% { background-position: 200% center; }
+  }
+
+  .graph-bg {
+    background:
+      radial-gradient(circle at 20% 30%, rgba(108,99,255,0.15), transparent 55%),
+      radial-gradient(circle at 80% 70%, rgba(15,206,172,0.12), transparent 55%),
+      radial-gradient(circle at 50% 50%, rgba(255,255,255,0.04), transparent 60%);
+  }
+  .graph-grid {
+    background-image:
+      linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+    background-size: 36px 36px;
+    mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+    -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+  }
+
+  .pulse-dot {
+    position: relative;
+  }
+  .pulse-dot::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: 9999px;
+    background: currentColor;
+    opacity: 0.35;
+    animation: pulse-ring 1.6s ease-out infinite;
+  }
+  @keyframes pulse-ring {
+    0%   { transform: scale(0.6); opacity: 0.5; }
+    100% { transform: scale(1.8); opacity: 0;   }
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--text) / 22%);
+    border-radius: 3px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--text) / 38%);
+  }
+}
