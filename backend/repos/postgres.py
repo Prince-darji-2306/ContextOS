@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS api_keys (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id     UUID REFERENCES users(id) ON DELETE CASCADE,
-    app_name    TEXT NOT NULL,
+    api_name    TEXT NOT NULL,
     key_hash    TEXT UNIQUE NOT NULL,
     key_prefix  TEXT NOT NULL,
     created_at  TIMESTAMPTZ DEFAULT NOW(),
@@ -248,3 +248,26 @@ async def insert_memory_conflicts_batch(user_id: str, conflicts: list[dict]):
             """,
             data
         )
+
+# ------------- Apps Functions --------------
+async def register_app(user_id: str, app_id: str, app_name: str):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            INSERT INTO app_registry (user_id, app_id, app_name)
+            VALUES ($1, $2, $3)
+            """,
+            user_id, app_id, app_name
+        )
+
+async def list_registered_apps(user_id: str):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("SELECT id, app_id, app_name, created_at FROM app_registry WHERE user_id = $1", user_id)
+    return [dict(row) for row in rows]
+
+async def deregister_app(id: str):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute("DELETE FROM app_registry WHERE id = $1", id)

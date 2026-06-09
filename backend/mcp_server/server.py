@@ -74,12 +74,13 @@ async def forget(
 
 
 async def resolve_app_id(app_name: str) -> str:
-    app_ids = {"Claude Desktop": "claude-desktop",
+    app_ids = {"Claude Code": "claude-code",
     "Claude Web": "claude-web",
     "Cursor": "cursor",
     "Cline": "cline",
     "Windsurf": "windsurf",
     "Continue.dev": "continue-dev",
+    "VS Code (Copilot)" : "vs-code",
     "Zed": "zed"}
 
     if app_name in app_ids:

@@ -4,30 +4,20 @@ import { Link, useNavigate } from 'react-router-dom'
 import { ParticleField } from '../components/ParticleField'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { Brain, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react'
-import api from '../lib/api'
-import { useAuthStore } from '../store/authStore'
-import { useToast } from '../components/Toast'
 
 export default function LoginPage() {
   const navigate = useNavigate()
-  const login = useAuthStore(state => state.login)
-  const { error } = useToast()
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({ email: '', password: '' })
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
     setLoading(true)
-    try {
-      const response = await api.post('/auth/login', formData)
-      login(response.data.token, response.data.user_id, response.data.display_name)
-      navigate('/dashboard')
-    } catch (err) {
-      error('Login Failed', err.response?.data?.detail || 'An unexpected error occurred')
-    } finally {
+    setTimeout(() => {
       setLoading(false)
-    }
+      navigate('/dashboard')
+    }, 1500)
   }
 
   return (

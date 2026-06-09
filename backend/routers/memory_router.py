@@ -55,7 +55,7 @@ async def resolve_conflict(req: ConflitMemoryRequest, user_id: str = Depends(get
     try:
         await resolve_memory_conflict(req.conflict_id, user_id, req.action)
         if req.action == 'forget':
-            create_task(forget_memories(user_id, [req.memory_id]))
+            create_task(forget_memories([req.memory_id]))
         return {"message": "Conflict resolved successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

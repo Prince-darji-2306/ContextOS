@@ -13,7 +13,10 @@ from .postgres import (
     get_all_users,
     fetch_pending_conflicts,
     resolve_memory_conflict, 
-    insert_memory_conflicts_batch
+    insert_memory_conflicts_batch,
+    register_app, 
+    list_registered_apps,
+    deregister_app,
 )
 
 from .qdrant import (

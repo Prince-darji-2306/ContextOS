@@ -4,9 +4,6 @@ import { Link, useNavigate } from 'react-router-dom'
 import { ParticleField } from '../components/ParticleField'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { Brain, Eye, EyeOff, ArrowRight, Loader2, Check } from 'lucide-react'
-import api from '../lib/api'
-import { useAuthStore } from '../store/authStore'
-import { useToast } from '../components/Toast'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
@@ -27,21 +24,13 @@ export default function RegisterPage() {
   const strengthLabels = ['Weak', 'Fair', 'Good', 'Strong']
   const strengthColors = ['bg-danger', 'bg-warning', 'bg-memory-context', 'bg-agent-active']
 
-  const login = useAuthStore(state => state.login)
-  const { error } = useToast()
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
     setLoading(true)
-    try {
-      const response = await api.post('/auth/register', formData)
-      login(response.data.token, response.data.user_id, response.data.display_name)
-      navigate('/dashboard')
-    } catch (err) {
-      error('Registration Failed', err.response?.data?.detail || 'An unexpected error occurred')
-    } finally {
+    setTimeout(() => {
       setLoading(false)
-    }
+      navigate('/dashboard')
+    }, 1500)
   }
 
   return (
