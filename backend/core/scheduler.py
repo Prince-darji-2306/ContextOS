@@ -3,7 +3,7 @@ from agents import (
     run_decay_agent ,
     run_scorer_agent ,
     run_consolidation_agent ,
-    run_summarisation_agent
+    run_summarization_agent
 )
 
 async def scheduled_decay():
@@ -17,4 +17,4 @@ async def scheduled_consolidation():
         await run_consolidation_agent(user_id)
 async def scheduled_summarisation():
     for user_id in await get_all_users():
-        await run_summarisation_agent(user_id)
+        await run_summarization_agent(user_id)

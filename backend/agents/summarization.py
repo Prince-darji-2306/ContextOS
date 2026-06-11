@@ -1,5 +1,5 @@
 import os
-import time
+from datetime import datetime, timezone, timedelta
 from groq import AsyncGroq
 from repos import insert_agent_log
 from schemas import SearchMemoryRequest, WriteMemoryRequest
@@ -8,7 +8,22 @@ from services import search_memory, forget_memories, create_memory
 
 async def run_summarization_agent(user_id : str , time_period_in_days : int = 30):
     try:
-        memories = await search_memory(user_id, SearchMemoryRequest(limit=10000, filters={"memory_type":"episodic","timestamp": {"$gte": time.time() - (time_period_in_days * 24 * 60 * 60)}}))
+        cutoff_date = (datetime.now(timezone.utc) - timedelta(days=time_period_in_days)).isoformat()
+        results = await search_memory(
+            user_id,
+            SearchMemoryRequest(
+                limit=10000,
+                filters={
+                    "memory_type": "episodic",
+                    "created_at": {"gte": cutoff_date}
+                }
+            )
+        )
+        memories = results[0]  # Properly unpack the Qdrant scroll points tuple
+        
+        if not memories:
+            return "No episodic memories found in the specified time period."
+
         memories_text = "\n".join([f"- {m.payload['content']}" for m in memories])
         llm = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
         prompt = f"""You are a memory summarization module. Summarize the following memories into a single, comprehensive, and crisp memory sentence. Maintain any crucial context, preferences, or dates, but avoid redundancy.
@@ -24,7 +39,6 @@ async def run_summarization_agent(user_id : str , time_period_in_days : int = 30
         )
         summarized_memory = chat_completion.choices[0].message.content.strip()
         
-        # Create the summarized memory
         await create_memory(user_id, WriteMemoryRequest(
             app_id='summerizer_agent',
             text=summarized_memory,
@@ -33,8 +47,9 @@ async def run_summarization_agent(user_id : str , time_period_in_days : int = 30
             ttl=None
         ))
         
-        await forget_memories([m.id for m in memories])
-        await insert_agent_log("summerization_agent", user_id, "summarized_memories", [m.id for m in memories], "success")
+        memory_ids = [m.id for m in memories]
+        await forget_memories(memory_ids)
+        await insert_agent_log("summerization_agent", user_id, "summarized_memories", memory_ids, "success")
         
         return summarized_memory
     except Exception as e:
