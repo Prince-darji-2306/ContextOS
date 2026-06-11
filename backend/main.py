@@ -17,7 +17,7 @@ from core import (
     scheduled_summarisation
 )
 from repos import init_db , close_pool , init_collection
-from routers import auth_router, keys_router, memory_router, jobs_router
+from routers import auth_router, keys_router, memory_router, jobs_router, apps_router, settings_router
 
 scheduler = AsyncIOScheduler()
 
@@ -52,6 +52,8 @@ app.include_router(auth_router)
 app.include_router(keys_router)
 app.include_router(memory_router)
 app.include_router(jobs_router)
+app.include_router(apps_router)
+app.include_router(settings_router)
 app.mount("/mcp", MCPSessionAuthWrapper(mcp_router.sse_app()))
 
 @app.get("/health")

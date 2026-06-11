@@ -165,10 +165,10 @@ async def get_user_api_keys(user_id: str, ):
     
     return [dict(row) for row in rows]
 
-async def remove_user_api_key(user_id: str, id: str):
+async def remove_user_api_key(id: str):
     pool = await get_pool()
     async with pool.acquire() as conn:
-        await conn.execute("DELETE FROM api_keys WHERE user_id = $1 AND id = $2", user_id, id)
+        await conn.execute("UPDATE api_keys SET is_active = False WHERE id = $2", id)
 
 async def get_stored_api_key_hash(prefix:str):
     pool = await get_pool()
