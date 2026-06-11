@@ -59,3 +59,50 @@ async def resolve_conflict(req: ConflitMemoryRequest, user_id: str = Depends(get
         return {"message": "Conflict resolved successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get('/graph')
+async def get_memory_graph(threshold: float = 0.65, user_id: str = Depends(get_current_user)):
+    try:
+        # 1. Fetch all user memories with their vectors (limit to a high number)
+        results = await search_memory(user_id, SearchMemoryRequest(limit=5000), with_vectors=True)
+        points = results[0]
+
+        nodes = []
+        for p in points:
+            nodes.append({
+                "id": p.id,
+                "label": p.payload.get("content", "")[:45] + ("..." if len(p.payload.get("content", "")) > 45 else ""),
+                "type": p.payload.get("memory_type", "semantic"),
+                "importance": p.payload.get("importance", 0.5),
+                "app": p.payload.get("app_id", "context-os")
+            })
+
+        edges = []
+        if len(points) >= 2:
+            import numpy as np
+            # Stack vectors to shape (N, D)
+            X = np.array([p.vector for p in points])
+            # Normalize vectors to unit length
+            norms = np.linalg.norm(X, axis=1, keepdims=True)
+            norms[norms == 0] = 1.0
+            X_normalized = X / norms
+            # Compute full pairwise similarity matrix
+            S = np.dot(X_normalized, X_normalized.T)
+
+            # Extract upper triangle indices (excluding diagonal) to prevent duplicate edges
+            ii, jj = np.triu_indices(len(points), k=1)
+            # Boolean mask for similarities matching the threshold
+            mask = S[ii, jj] >= threshold
+            
+            # Populate edges list using vectorized results
+            for i, j, score in zip(ii[mask], jj[mask], S[ii, jj][mask]):
+                edges.append({
+                    "source": points[int(i)].id,
+                    "target": points[int(j)].id,
+                    "weight": float(score)
+                })
+
+        return {"nodes": nodes, "edges": edges}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

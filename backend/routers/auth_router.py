@@ -1,7 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from schemas import LoginRequest, RegisterRequest
-from repos import get_user_by_email , create_user 
-from core import create_access_token, hash_password, verify_password
+from repos import get_user_by_email, create_user, update_user_password
+from core import create_access_token, hash_password, verify_password, get_current_user
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -44,5 +44,13 @@ async def login(req : LoginRequest):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
-    
+
+
+@router.post("/change-password")
+async def change_password(new_password: str, user_id: str = Depends(get_current_user)):
+    try:
+        password_hash = hash_password(new_password)
+        await update_user_password(user_id, password_hash)
+        return {"message": "Password updated successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

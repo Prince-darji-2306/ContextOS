@@ -2,9 +2,10 @@ from mcp_server.server import resolve_app_id
 from fastapi import APIRouter, HTTPException, Depends
 from core import get_current_user
 from repos import register_app, list_registered_apps, deregister_app
+
 router = APIRouter(prefix="/apps", tags=["Apps"])
 
-@router.get("/register")
+@router.post("/register")
 async def register_new_app(app_name: str, user_id: str = Depends(get_current_user)):
     try:
         app_id = resolve_app_id(app_name)
