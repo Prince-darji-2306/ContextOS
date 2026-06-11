@@ -2,9 +2,11 @@ from .postgres import (
     store_api_key ,
     init_db ,
     close_pool ,
+    get_pool ,
     get_user_by_email ,
     get_user_by_id ,
     create_user,
+    update_user_password,
     get_user_api_keys,
     remove_user_api_key,
     get_stored_api_key_hash,
@@ -17,6 +19,8 @@ from .postgres import (
     register_app, 
     list_registered_apps,
     deregister_app,
+    get_user_settings,
+    update_user_settings,
 )
 
 from .qdrant import (

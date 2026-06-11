@@ -53,6 +53,13 @@ CREATE TABLE IF NOT EXISTS app_registry (
     last_seen     TIMESTAMPTZ
 );
 
+CREATE TABLE IF NOT EXISTS user_settings (
+    user_id       UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    default_type  TEXT DEFAULT 'semantic',
+    default_ttl   INT DEFAULT NULL,
+    dedup_limit   DOUBLE PRECISION DEFAULT 0.85,
+);
+
 CREATE TABLE IF NOT EXISTS agent_logs (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     agent_name  TEXT NOT NULL,
@@ -130,6 +137,12 @@ async def get_user_by_id(id : str) -> dict | None:
         return None
     
     return dict(result)
+
+
+async def update_user_password(user_id: str, password_hash: str):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute("UPDATE users SET password_hash = $1 WHERE id = $2::uuid", password_hash, user_id)
 
 
 
@@ -271,3 +284,35 @@ async def deregister_app(id: str):
     pool = await get_pool()
     async with pool.acquire() as conn:
         await conn.execute("DELETE FROM app_registry WHERE id = $1", id)
+
+
+# ------------- Settings Functions --------------
+async def get_user_settings(user_id: str) -> dict:
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT * FROM user_settings WHERE user_id = $1::uuid", user_id)
+        if not row:
+            row = await conn.fetchrow(
+                """
+                INSERT INTO user_settings (user_id)
+                VALUES ($1::uuid)
+                RETURNING *
+                """,
+                user_id
+            )
+    return dict(row)
+
+async def update_user_settings(user_id: str, default_type: str, default_ttl: int | None, dedup_limit: float):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            INSERT INTO user_settings (user_id, default_type, default_ttl, dedup_limit)
+            VALUES ($1::uuid, $2, $3, $4)
+            ON CONFLICT (user_id) DO UPDATE
+            SET default_type = EXCLUDED.default_type,
+                default_ttl = EXCLUDED.default_ttl,
+                dedup_limit = EXCLUDED.dedup_limit
+            """,
+            user_id, default_type, default_ttl, dedup_limit
+        )
