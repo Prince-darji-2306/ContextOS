@@ -40,3 +40,8 @@ class AgentState(TypedDict):
     status: str
     retries: int
     result: dict
+
+class SettingsUpdateRequest(BaseModel):
+    default_type: str
+    default_ttl: int | None = None
+    dedup_limit: float = 0.85

@@ -5,5 +5,6 @@ from .schema import (
     RecallMemoryRequest,
     SearchMemoryRequest,
     ConflitMemoryRequest,
+    SettingsUpdateRequest,
     AgentState
 )

@@ -3,7 +3,7 @@ from math import log1p
 from fastapi import HTTPException
 from datetime import datetime, timezone, timedelta
 from repos import get_qdrant_client , get_embedding 
-from qdrant_client.models import PointStruct, Filter, FieldCondition, MatchValue, PointIdsList, SetPayloadOperation, SetPayload
+from qdrant_client.models import PointStruct, Filter, FieldCondition, MatchValue, PointIdsList, SetPayloadOperation, SetPayload, Range
 from schemas import WriteMemoryRequest, RecallMemoryRequest, SearchMemoryRequest
 
 
@@ -85,9 +85,22 @@ async def search_memory(user_id : str , req : SearchMemoryRequest, with_vectors:
         
         if req.filters:
             for key, value in req.filters.items():
-                must_conditions.append(
-                    FieldCondition(key=key, match=MatchValue(value=value))
-                )
+                if isinstance(value, dict) and any(k in value for k in ["gt", "gte", "lt", "lte"]):
+                    must_conditions.append(
+                        FieldCondition(
+                            key=key,
+                            range=Range(
+                                gt=value.get("gt"),
+                                gte=value.get("gte"),
+                                lt=value.get("lt"),
+                                lte=value.get("lte")
+                            )
+                        )
+                    )
+                else:
+                    must_conditions.append(
+                        FieldCondition(key=key, match=MatchValue(value=value))
+                    )
         
         filter_query = Filter(must=must_conditions)
 

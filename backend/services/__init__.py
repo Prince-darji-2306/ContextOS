@@ -4,5 +4,5 @@ from .qdrant_service import (
     recall_memory,
     forget_memories,
     batch_update_scores_and_stats,
-    get_expired_memories
+    get_expired_memories_id
 )
