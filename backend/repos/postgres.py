@@ -148,7 +148,7 @@ async def store_api_key(user_id: str, api_name: str, ttl_days: int, key_prefix: 
 async def get_user_api_keys(user_id: str, ):
     pool = await get_pool()
     async with pool.acquire() as conn:
-        rows = await conn.fetch("SELECT id, app_name, key_prefix, last_used, ttl_days FROM api_keys WHERE user_id = $1 ORDER BY created_at DESC", user_id)
+        rows = await conn.fetch("SELECT id, api_name, key_prefix, last_used, ttl_days FROM api_keys WHERE user_id = $1 ORDER BY created_at DESC", user_id)
     
     return [dict(row) for row in rows]
 

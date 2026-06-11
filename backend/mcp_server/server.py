@@ -1,6 +1,7 @@
 from typing import Any
 from asyncio import create_task
 from mcp.server.fastmcp import FastMCP, Context
+from agents import run_summarization_agent
 from services import create_memory,search_memory,recall_memory,forget_memories, batch_update_scores_and_stats
 
 # import sys
@@ -71,6 +72,13 @@ async def forget(
     memory_ids: list[str]) -> dict:
 
     return await forget_memories(memory_ids)
+
+@mcp_router.tool()
+async def summarize(
+    ctx: Context,
+    time_period_in_days: int) -> dict:
+    user_id = current_user_id.get()
+    return await run_summarization_agent(user_id, time_period_in_days)
 
 
 async def resolve_app_id(app_name: str) -> str:
