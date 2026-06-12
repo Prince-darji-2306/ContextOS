@@ -1,7 +1,7 @@
 from asyncio import create_task
 from core import get_current_user
 from repos import fetch_pending_conflicts, resolve_memory_conflict
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query
 from schemas import WriteMemoryRequest, RecallMemoryRequest, SearchMemoryRequest, ConflitMemoryRequest
 from services import create_memory, recall_memory, search_memory, batch_update_scores_and_stats, forget_memories
 
@@ -35,7 +35,7 @@ async def search_user_memories(req : SearchMemoryRequest, user_id: str = Depends
 
 
 @router.delete('/forget')
-async def forget_user_memories(memory_ids : list[str], user_id: str = Depends(get_current_user)):
+async def forget_user_memories(memory_ids : list[str] = Query(...), user_id: str = Depends(get_current_user)):
     try:
         return await forget_memories(memory_ids)
     except Exception as e:
@@ -72,10 +72,7 @@ async def get_memory_graph(threshold: float = 0.65, user_id: str = Depends(get_c
         for p in points:
             nodes.append({
                 "id": p.id,
-                "label": p.payload.get("content", "")[:45] + ("..." if len(p.payload.get("content", "")) > 45 else ""),
-                "type": p.payload.get("memory_type", "semantic"),
-                "importance": p.payload.get("importance", 0.5),
-                "app": p.payload.get("app_id", "context-os")
+                "payload": p.payload
             })
 
         edges = []
