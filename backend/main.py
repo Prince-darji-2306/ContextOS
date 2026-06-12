@@ -57,6 +57,6 @@ app.include_router(apps_router)
 app.include_router(settings_router)
 app.mount("/mcp", MCPSessionAuthWrapper(mcp_router.sse_app()))
 
-@app.get("/health")
+@app.get("/")
 def read_root():
-    return {"status": "Success"}
+    return {"status": "Health Checking Success"}
