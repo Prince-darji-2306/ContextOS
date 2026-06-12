@@ -50,14 +50,15 @@ CREATE TABLE IF NOT EXISTS app_registry (
     app_id        TEXT NOT NULL,
     app_name      TEXT NOT NULL,
     registered_at TIMESTAMPTZ DEFAULT NOW(),
-    last_seen     TIMESTAMPTZ
+    last_seen     TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT unique_user_app UNIQUE (user_id, app_id)
 );
 
 CREATE TABLE IF NOT EXISTS user_settings (
     user_id       UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     default_type  TEXT DEFAULT 'semantic',
     default_ttl   INT DEFAULT NULL,
-    dedup_limit   DOUBLE PRECISION DEFAULT 0.85,
+    dedup_limit   DOUBLE PRECISION DEFAULT 0.85
 );
 
 CREATE TABLE IF NOT EXISTS agent_logs (
@@ -95,7 +96,7 @@ CREATE INDEX IF NOT EXISTS idx_app_registry_id ON app_registry(id);
 CREATE INDEX IF NOT EXISTS idx_app_registry_user_id ON app_registry(user_id);
 CREATE INDEX IF NOT EXISTS idx_agent_logs_id ON agent_logs(id);
 CREATE INDEX IF NOT EXISTS idx_agent_logs_user_id ON agent_logs(user_id);
-CREATE INDEX IF NOT EXISTS idx_conflicts_user_pending ON memory_conflicts(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_conflicts_user_pending ON memory_conflicts(user_id, action);
 
 """
 
@@ -158,17 +159,20 @@ async def store_api_key(user_id: str, api_name: str, ttl_days: int, key_prefix: 
             user_id, api_name, hashed_key, key_prefix, ttl_days
         )
 
-async def get_user_api_keys(user_id: str, ):
+async def get_user_api_keys(user_id: str):
     pool = await get_pool()
     async with pool.acquire() as conn:
-        rows = await conn.fetch("SELECT id, api_name, key_prefix, last_used, ttl_days FROM api_keys WHERE user_id = $1 ORDER BY created_at DESC", user_id)
-    
+        rows = await conn.fetch(
+            "SELECT id, api_name, key_prefix, last_used, ttl_days, created_at, is_active "
+            "FROM api_keys WHERE user_id = $1 ORDER BY created_at DESC",
+            user_id
+        )
     return [dict(row) for row in rows]
 
 async def remove_user_api_key(id: str):
     pool = await get_pool()
     async with pool.acquire() as conn:
-        await conn.execute("UPDATE api_keys SET is_active = False WHERE id = $2", id)
+        await conn.execute("UPDATE api_keys SET is_active = False WHERE id = $1::uuid", id)
 
 async def get_stored_api_key_hash(prefix:str):
     pool = await get_pool()
@@ -268,16 +272,28 @@ async def register_app(user_id: str, app_id: str, app_name: str):
     async with pool.acquire() as conn:
         await conn.execute(
             """
-            INSERT INTO app_registry (user_id, app_id, app_name)
-            VALUES ($1, $2, $3)
+            INSERT INTO app_registry (user_id, app_id, app_name, last_seen)
+            VALUES ($1, $2, $3, NOW())
+            ON CONFLICT (user_id, app_id) DO UPDATE
+                SET app_name  = EXCLUDED.app_name,
+                    last_seen = NOW()
             """,
             user_id, app_id, app_name
         )
 
-async def list_registered_apps(user_id: str):
+async def list_registered_apps(user_id: str, count: bool = False):
     pool = await get_pool()
     async with pool.acquire() as conn:
-        rows = await conn.fetch("SELECT id, app_id, app_name, created_at FROM app_registry WHERE user_id = $1", user_id)
+        if count:
+            return await conn.fetchval(
+                "SELECT COUNT(*) FROM app_registry WHERE user_id = $1",
+                user_id
+            )
+        rows = await conn.fetch(
+            "SELECT id, app_id, app_name, registered_at, last_seen "
+            "FROM app_registry WHERE user_id = $1 ORDER BY registered_at DESC",
+            user_id
+        )
     return [dict(row) for row in rows]
 
 async def deregister_app(id: str):
@@ -316,3 +332,6 @@ async def update_user_settings(user_id: str, default_type: str, default_ttl: int
             """,
             user_id, default_type, default_ttl, dedup_limit
         )
+
+# ---------------- Jobs Functions ----------------
+

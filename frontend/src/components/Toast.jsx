@@ -48,6 +48,25 @@ const styles = {
   info: 'border-border bg-surface/90',
 }
 
+function formatDescription(desc) {
+  if (!desc) return null;
+  if (typeof desc === 'string') return desc;
+  if (Array.isArray(desc)) {
+    return desc.map(item => {
+      if (item && typeof item === 'object') {
+        const path = item.loc ? item.loc.filter(p => p !== 'body' && p !== 'query').join('.') : '';
+        const msg = item.msg || '';
+        return path ? `${path}: ${msg}` : msg;
+      }
+      return String(item);
+    }).join(', ');
+  }
+  if (typeof desc === 'object') {
+    return JSON.stringify(desc);
+  }
+  return String(desc);
+}
+
 export function ToastContainer() {
   const { toasts, removeToast } = useToastStore()
 
@@ -78,7 +97,7 @@ export function ToastContainer() {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-text">{toast.title}</p>
                 {toast.description && (
-                  <p className="text-xs text-text-secondary mt-0.5">{toast.description}</p>
+                  <p className="text-xs text-text-secondary mt-0.5">{formatDescription(toast.description)}</p>
                 )}
               </div>
               <button

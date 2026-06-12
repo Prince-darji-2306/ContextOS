@@ -10,6 +10,7 @@ import ApiKeysPage from './pages/ApiKeysPage'
 import ConnectedAppsPage from './pages/ConnectedAppsPage'
 import AgentActivityPage from './pages/AgentActivityPage'
 import SettingsPage from './pages/SettingsPage'
+import ProtectedRoute from './components/ProtectedRoute'
 
 export default function App() {
   return (
@@ -17,7 +18,14 @@ export default function App() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
-      <Route path="/dashboard" element={<DashboardLayout />}>
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }
+      >
         <Route index element={<DashboardHome />} />
         <Route path="memories" element={<MemoryBrowser />} />
         <Route path="graph" element={<MemoryGraph />} />
@@ -30,3 +38,4 @@ export default function App() {
     </Routes>
   )
 }
+

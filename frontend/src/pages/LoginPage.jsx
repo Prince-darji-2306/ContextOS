@@ -1,24 +1,23 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { ParticleField } from '../components/ParticleField'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { Brain, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react'
+import { useLogin } from '../hooks/useAuth'
 
 export default function LoginPage() {
-  const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({ email: '', password: '' })
+  const loginMutation = useLogin()
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
-      navigate('/dashboard')
-    }, 1500)
+    loginMutation.mutate({ email: formData.email, password: formData.password })
   }
+
+  const loading = loginMutation.isPending
+  const errorMsg = loginMutation.error?.response?.data?.detail || loginMutation.error?.message || ''
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden flex">
@@ -151,6 +150,11 @@ export default function LoginPage() {
                 </>
               )}
             </button>
+            {errorMsg && (
+              <p className="text-sm text-center" style={{ color: 'hsl(var(--danger))' }}>
+                {errorMsg}
+              </p>
+            )}
           </form>
 
           <p className="text-center text-sm text-text-secondary mt-8">

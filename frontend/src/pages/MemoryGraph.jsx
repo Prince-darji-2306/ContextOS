@@ -1,19 +1,52 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useMemo } from "react"
 import * as d3 from "d3"
 import { motion } from "framer-motion"
-import { X } from "lucide-react"
-import { MOCK_MEMORIES, formatRelative } from "../lib/mock"
+import { X, Loader2 } from "lucide-react"
 import { TypeBadge, AppBadge } from "../components/Card"
+import { useMemoryGraph } from "../hooks/useMemories"
+import { adaptMemory } from "../hooks/useMemories"
+import { formatTimeAgo } from "../lib/utils"
+
+function formatRelative(ts) {
+  if (!ts) return "—"
+  try {
+    return formatTimeAgo(new Date(ts).toISOString())
+  } catch (e) {
+    return "—"
+  }
+}
 
 export default function MemoryGraph() {
   const svgRef = useRef(null)
+  const [localThreshold, setLocalThreshold] = useState(0.62)
   const [threshold, setThreshold] = useState(0.62)
   const [types, setTypes] = useState({ semantic: true, episodic: true, summary: true })
   const [selected, setSelected] = useState(null)
   const [edgeCount, setEdgeCount] = useState(0)
 
+  const { data: graphData, isLoading: graphLoading } = useMemoryGraph(threshold)
+
+  // Debounce slider updates to reduce backend query overhead
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setThreshold(localThreshold)
+    }, 300)
+    return () => clearTimeout(handler)
+  }, [localThreshold])
+
   useEffect(() => {
     if (!svgRef.current) return
+    if (graphLoading) return
+
+    // Build node + edge lists from API data or fall back gracefully
+    let memories
+    if (graphData?.nodes?.length) {
+      memories = graphData.nodes.map(adaptMemory)
+    } else {
+      // No graph data from backend — show empty state inside the effect
+      setEdgeCount(0)
+      return
+    }
 
     const svg = d3.select(svgRef.current)
     svg.selectAll("*").remove()
@@ -27,20 +60,18 @@ export default function MemoryGraph() {
     merge.append("feMergeNode").attr("in", "b")
     merge.append("feMergeNode").attr("in", "SourceGraphic")
 
-    const memories = MOCK_MEMORIES.filter((m) => types[m.type])
-    const nodes = memories.map((m) => ({ id: m.id, mem: m, r: 4 + m.importance * 10 }))
+    const filteredMemories = memories.filter((m) => types[m.type])
+    const nodes = filteredMemories.map((m) => ({ id: m.id, mem: m, r: 4 + m.importance * 10 }))
 
-    // pseudo-similarity from shared tags + same type
-    const links = []
-    for (let i = 0; i < memories.length; i++) {
-      for (let j = i + 1; j < memories.length; j++) {
-        const a = memories[i], b = memories[j]
-        const shared = a.tags.filter((t) => b.tags.includes(t)).length
-        const base = shared * 0.25 + (a.type === b.type ? 0.35 : 0) + (a.app === b.app ? 0.15 : 0)
-        const sim = Math.min(0.95, base + 0.1 * Math.random())
-        if (sim >= threshold) links.push({ source: a.id, target: b.id, w: sim })
-      }
-    }
+    // Use actual edges from the backend, filtering out any links that refer to filtered-out nodes
+    const activeNodeIds = new Set(nodes.map(n => n.id))
+    const links = (graphData?.edges ?? [])
+      .filter(e => activeNodeIds.has(e.source) && activeNodeIds.has(e.target))
+      .map((e) => ({
+        source: e.source,
+        target: e.target,
+        w: e.weight
+      }))
     setEdgeCount(links.length)
 
     const color = (t) => t === "semantic" ? "#8B7BFF" : t === "episodic" ? "#0FCEAC" : "#F59E0B"
@@ -113,7 +144,7 @@ export default function MemoryGraph() {
     svgRef.current.__recenter = () => svg.transition().duration(600).call(zoom.transform, d3.zoomIdentity)
 
     return () => { sim.stop() }
-  }, [threshold, types])
+  }, [graphData, graphLoading, threshold, types])
 
   return (
     <div className="relative h-[calc(100vh-8.5rem)] lg:h-[calc(100vh-1.5rem)] w-full overflow-hidden graph-bg rounded-xl">
@@ -154,16 +185,19 @@ export default function MemoryGraph() {
       {/* legend */}
       <motion.div
         initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-        className="hidden md:flex absolute top-6 right-6 glass card-shadow rounded-xl px-4 py-3 items-center gap-4 z-20 text-xs"
+        className="hidden md:flex absolute top-6 right-6 glass card-shadow rounded-xl px-4 py-3 flex flex-col items-stretch gap-2.5 z-20 text-xs min-w-[110px]"
       >
         {[
-          { c: "var(--violet)", l: "Semantic" },
-          { c: "var(--teal)", l: "Episodic" },
-          { c: "var(--amber)", l: "Summary" },
+          { c: "#8B7BFF", l: "Semantic" },
+          { c: "#0FCEAC", l: "Episodic" },
+          { c: "#F59E0B", l: "Summary" },
         ].map((x) => (
-          <div key={x.l} className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full" style={{ background: x.c, boxShadow: `0 0 10px ${x.c}` }} />
-            <span className="text-muted-foreground">{x.l}</span>
+          <div key={x.l} className="flex items-center justify-between gap-3">
+            <span className="text-muted-foreground font-medium text-left">{x.l}</span>
+            <span className="relative flex h-2.5 w-2.5 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: x.c }} />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5" style={{ backgroundColor: x.c, boxShadow: `0 0 8px ${x.c}` }} />
+            </span>
           </div>
         ))}
       </motion.div>
@@ -188,9 +222,10 @@ export default function MemoryGraph() {
         <div className="h-6 w-px bg-border" />
         <label className="flex items-center gap-2 text-xs">
           <span className="text-muted-foreground">similarity</span>
-          <input type="range" min={0.5} max={0.9} step={0.01} value={threshold}
-            onChange={(e) => setThreshold(parseFloat(e.target.value))} className="accent-teal w-28" />
-          <span className="font-mono w-10 text-foreground">{threshold.toFixed(2)}</span>
+          <input type="range" min={0.5} max={0.9} step={0.01} value={localThreshold}
+            onChange={(e) => setLocalThreshold(parseFloat(e.target.value))} className="accent-teal w-28" />
+          <span className="font-mono w-10 text-foreground">{localThreshold.toFixed(2)}</span>
+          {graphLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-teal" />}
         </label>
       </motion.div>
 
@@ -202,7 +237,7 @@ export default function MemoryGraph() {
         >
           <div className="flex items-start justify-between mb-3">
             <span className="font-mono text-xs text-muted-foreground">{selected.id}</span>
-            <button onClick={() => setSelected(null)} className="h-7 w-7 rounded hover:bg-accent flex items-center justify-center">
+            <button onClick={() => setSelected(null)} className="h-7 w-7 rounded hover:bg-surface-hover flex items-center justify-center">
               <X className="h-4 w-4" />
             </button>
           </div>

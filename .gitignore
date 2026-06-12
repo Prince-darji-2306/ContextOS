@@ -18,4 +18,5 @@ frontend/.vite
 lfrontend/*
 frontend/dist
 frontend/public.zip
+backend/seed_memories_fast.py
 Systems.md

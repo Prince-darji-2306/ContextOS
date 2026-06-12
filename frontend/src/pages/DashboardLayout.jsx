@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useSidebarStore } from '../store/sidebarStore'
 import { useThemeStore } from '../store/themeStore'
+import { useAuthStore } from '../store/authStore'
 import { ToastContainer } from '../components/Toast'
 import {
   Brain, LayoutDashboard, Database, GitGraph, Key, Plug, Bot,
@@ -25,8 +26,18 @@ export default function DashboardLayout() {
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
 
+  // Real auth state
+  const display_name = useAuthStore((s) => s.display_name)
+  const logout = useAuthStore((s) => s.logout)
+
+  // Derive initials from display_name (e.g. "Prince Darji" → "PD")
+  const initials = display_name
+    ? display_name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+    : 'U'
+
   const handleLogout = () => {
-    navigate('/login')
+    logout()         // clears Zustand store + localStorage
+    navigate('/login', { replace: true })
   }
 
   const handleProfile = () => {
@@ -113,7 +124,7 @@ export default function DashboardLayout() {
                   className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-text-secondary hover:text-text hover:bg-surface-hover w-full transition-all"
                 >
                   <div className="w-7 h-7 rounded-full bg-text-inverse border border-border flex items-center justify-center shrink-0">
-                    <span className="text-[10px] font-semibold text-background">JD</span>
+                    <span className="text-[10px] font-semibold text-background">{initials}</span>
                   </div>
                   <span>Profile</span>
                 </button>
@@ -262,7 +273,7 @@ export default function DashboardLayout() {
             }`}>
               <span className={`text-[10px] font-bold leading-none ${
                 theme === 'dark' ? 'text-black' : 'text-white'
-              }`}>JD</span>
+              }`}>{initials}</span>
             </div>
             {!collapsed && (
               <motion.span

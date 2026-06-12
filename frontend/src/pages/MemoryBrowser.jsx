@@ -1,9 +1,15 @@
 import { useMemo, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Search, Trash2, Copy, X, Database } from "lucide-react"
+import { Search, Trash2, Copy, X, Database, Loader2 } from "lucide-react"
 import { GlassCard, TypeBadge, AppBadge } from "../components/Card"
-import { MOCK_MEMORIES, formatRelative } from "../lib/mock"
 import { useToast } from "../components/Toast"
+import { useSearchMemories, useRecallMemories, useForgetMemories } from "../hooks/useMemories"
+import { formatTimeAgo } from "../lib/utils"
+
+// Re-export for detail panel compatibility
+function formatRelative(ts) {
+  return formatTimeAgo(new Date(ts).toISOString())
+}
 
 export default function MemoryBrowser() {
   const toast = useToast()
@@ -11,19 +17,47 @@ export default function MemoryBrowser() {
   const [type, setType] = useState("all")
   const [app, setApp] = useState("all")
   const [sort, setSort] = useState("recent")
-  const [deleted, setDeleted] = useState(new Set())
   const [open, setOpen] = useState(null)
 
+  // Switch between browse (no query) and semantic recall (with query)
+  const isSearching = q.trim().length > 0
+
+  const filters = useMemo(() => {
+    const f = {}
+    if (type !== "all") f.memory_type = type
+    if (app !== "all") f.app_id = app
+    return f
+  }, [type, app])
+
+  const browseQuery = useSearchMemories({ filters, limit: 50, offset: 0 })
+  const recallQuery = useRecallMemories({ query: q, top_k: 50, filters, enabled: isSearching })
+
+  const rawList = isSearching ? recallQuery.data ?? [] : browseQuery.data ?? []
+  const isLoading = isSearching ? recallQuery.isLoading : browseQuery.isLoading
+  const isError = isSearching ? recallQuery.isError : browseQuery.isError
+
+  const forgetMutation = useForgetMemories()
+
+  // Client-side sort only (server doesn't support sort_by yet)
   const list = useMemo(() => {
-    let r = MOCK_MEMORIES.filter((m) => !deleted.has(m.id))
-    if (q) r = r.filter((m) => m.content.toLowerCase().includes(q.toLowerCase()))
-    if (type !== "all") r = r.filter((m) => m.type === type)
-    if (app !== "all") r = r.filter((m) => m.app === app)
-    if (sort === "recent") r = [...r].sort((a, b) => b.createdAt - a.createdAt)
-    if (sort === "accessed") r = [...r].sort((a, b) => b.accessCount - a.accessCount)
-    if (sort === "importance") r = [...r].sort((a, b) => b.importance - a.importance)
+    const r = [...rawList]
+    if (sort === "recent") r.sort((a, b) => b.createdAt - a.createdAt)
+    else if (sort === "accessed") r.sort((a, b) => b.accessCount - a.accessCount)
+    else if (sort === "importance") r.sort((a, b) => b.importance - a.importance)
     return r
-  }, [q, type, app, sort, deleted])
+  }, [rawList, sort])
+
+  const handleDelete = (id) => {
+    forgetMutation.mutate([id], {
+      onSuccess: () => {
+        if (open?.id === id) setOpen(null)
+        toast.success("Memory deleted", "The memory has been removed")
+      },
+      onError: (err) => {
+        toast.error("Error", err.response?.data?.detail || "Failed to delete memory")
+      },
+    })
+  }
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -36,7 +70,8 @@ export default function MemoryBrowser() {
         <div className="relative">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <input
-            value={q} onChange={(e) => setQ(e.target.value)}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
             placeholder="Search memories semantically…"
             className="w-full h-10 pl-10 pr-3 rounded-lg bg-surface border border-border outline-none focus:border-violet text-sm"
           />
@@ -54,6 +89,7 @@ export default function MemoryBrowser() {
             <option value="claude-desktop">Claude Desktop</option>
             <option value="cline">Cline</option>
             <option value="windsurf">Windsurf</option>
+            <option value="context-os">ContextOS</option>
           </select>
           <select value={sort} onChange={(e) => setSort(e.target.value)} className="h-9 px-3 rounded-lg bg-surface border border-border outline-none ml-auto">
             <option value="recent">Most Recent</option>
@@ -63,10 +99,18 @@ export default function MemoryBrowser() {
         </div>
       </GlassCard>
 
-      {list.length === 0 ? (
+      {isLoading ? (
+        <div className="flex justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : isError ? (
+        <div className="text-center py-20 text-danger text-sm">Failed to load memories.</div>
+      ) : list.length === 0 ? (
         <div className="text-center py-20">
           <Database className="h-12 w-12 mx-auto text-muted-foreground opacity-40" />
-          <p className="mt-4 text-muted-foreground">No memories match.</p>
+          <p className="mt-4 text-muted-foreground">
+            {isSearching ? "No memories match your search." : "No memories yet. Store your first one via MCP."}
+          </p>
         </div>
       ) : (
         <div className="grid md:grid-cols-2 gap-4">
@@ -116,16 +160,12 @@ export default function MemoryBrowser() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
-                      setDeleted((p) => {
-                        const next = new Set(p)
-                        next.add(m.id)
-                        return next
-                      })
-                      toast.success("Memory deleted", "The memory has been removed")
+                      handleDelete(m.id)
                     }}
-                    className="h-7 w-7 rounded-md bg-surface/80 backdrop-blur border border-border flex items-center justify-center hover:bg-danger/20 hover:border-danger text-danger"
+                    disabled={forgetMutation.isPending}
+                    className="h-7 w-7 rounded-md bg-surface/80 backdrop-blur border border-border flex items-center justify-center hover:bg-danger/20 hover:border-danger text-danger disabled:opacity-50"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    {forgetMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
                   </button>
                 </div>
               </motion.div>
@@ -134,20 +174,23 @@ export default function MemoryBrowser() {
         </div>
       )}
 
-      {/* Slide-over */}
+      {/* Memory Detail Slide-over */}
       <AnimatePresence>
         {open && (
           <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40" onClick={() => setOpen(null)} />
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+              onClick={() => setOpen(null)}
+            />
             <motion.aside
               initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 240 }}
               className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-surface border-l border-border z-50 overflow-y-auto scrollbar-thin"
             >
               <div className="sticky top-0 bg-surface/95 backdrop-blur p-4 border-b border-border flex items-center justify-between">
-                <span className="text-sm font-mono text-muted-foreground">{open.id}</span>
-                <button onClick={() => setOpen(null)} className="h-8 w-8 rounded-md hover:bg-surface-hover flex items-center justify-center">
+                <span className="text-sm font-mono text-muted-foreground truncate">{open.id}</span>
+                <button onClick={() => setOpen(null)} className="h-8 w-8 rounded-md hover:bg-surface-hover flex items-center justify-center shrink-0">
                   <X className="h-4 w-4" />
                 </button>
               </div>
@@ -164,7 +207,7 @@ export default function MemoryBrowser() {
                     ["Access count", String(open.accessCount)],
                     ["Importance", open.importance.toFixed(2)],
                     ["TTL", open.ttl],
-                    ["Shared with", open.sharedWith.join(", ")],
+                    ["Shared with", open.sharedWith.join(", ") || "—"],
                   ].map(([k, v]) => (
                     <div key={k} className="p-3 rounded-lg bg-muted">
                       <div className="text-muted-foreground">{k}</div>
@@ -179,26 +222,18 @@ export default function MemoryBrowser() {
                 </div>
                 <div className="flex gap-2 pt-4 border-t border-border">
                   <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(open.id)
-                      toast.success("Memory ID copied", "Copied to clipboard")
-                    }}
+                    onClick={() => { navigator.clipboard.writeText(open.id); toast.success("Memory ID copied", "Copied to clipboard") }}
                     className="flex-1 h-10 rounded-lg border border-border hover:bg-surface-hover text-sm"
-                  >Copy ID</button>
+                  >
+                    Copy ID
+                  </button>
                   <button
-                    onClick={() => {
-                      if (confirm("Delete this memory?")) {
-                        setDeleted((p) => {
-                          const next = new Set(p)
-                          next.add(open.id)
-                          return next
-                        })
-                        setOpen(null)
-                        toast.success("Deleted", "Memory has been deleted")
-                      }
-                    }}
-                    className="flex-1 h-10 rounded-lg bg-danger/15 text-danger border border-danger/30 text-sm hover:bg-danger/25"
-                  >Delete memory</button>
+                    onClick={() => handleDelete(open.id)}
+                    disabled={forgetMutation.isPending}
+                    className="flex-1 h-10 rounded-lg bg-danger/15 text-danger border border-danger/30 text-sm hover:bg-danger/25 disabled:opacity-50"
+                  >
+                    Delete memory
+                  </button>
                 </div>
               </div>
             </motion.aside>

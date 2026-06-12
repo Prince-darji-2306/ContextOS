@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { ParticleField } from '../components/ParticleField'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { Brain, Eye, EyeOff, ArrowRight, Loader2, Check } from 'lucide-react'
+import { useRegister } from '../hooks/useAuth'
 
 export default function RegisterPage() {
-  const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({ name: '', email: '', password: '' })
+  const registerMutation = useRegister()
 
   const passwordStrength = (pwd) => {
     let score = 0
@@ -26,12 +26,11 @@ export default function RegisterPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
-      navigate('/dashboard')
-    }, 1500)
+    registerMutation.mutate(formData)
   }
+
+  const loading = registerMutation.isPending
+  const errorMsg = registerMutation.error?.response?.data?.detail || registerMutation.error?.message || ''
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden flex">
@@ -188,6 +187,11 @@ export default function RegisterPage() {
                 </>
               )}
             </button>
+            {errorMsg && (
+              <p className="text-sm text-center" style={{ color: 'hsl(var(--danger))' }}>
+                {errorMsg}
+              </p>
+            )}
           </form>
 
           <p className="text-center text-sm text-text-secondary mt-8">

@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
 import { cn } from '../lib/utils'
+import { createPortal } from 'react-dom'
 
 export function SlideOver({ isOpen, onClose, title, children, width = 'md' }) {
   const widths = {
@@ -11,7 +12,7 @@ export function SlideOver({ isOpen, onClose, title, children, width = 'md' }) {
     full: 'max-w-full mx-4',
   }
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <>
@@ -52,6 +53,7 @@ export function SlideOver({ isOpen, onClose, title, children, width = 'md' }) {
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   )
 }
