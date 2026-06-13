@@ -4,7 +4,8 @@ logging.getLogger("mcp").setLevel(logging.WARNING)
 logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
 logging.getLogger("apscheduler").setLevel(logging.WARNING)
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from mcp_server.server import mcp_router
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
@@ -40,6 +41,10 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(status_code=500, content={ "status": "failed", "error": str(exc) })
 
 app.add_middleware(
     CORSMiddleware,

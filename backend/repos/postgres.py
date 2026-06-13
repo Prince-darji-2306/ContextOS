@@ -1,5 +1,6 @@
 import os
 import asyncpg
+from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -21,6 +22,13 @@ async def close_pool():
     if _pool:
         await _pool.close()
         _pool = None
+
+@asynccontextmanager
+async def get_connection():
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        yield conn
+
 
 CREATE_TABLES_SQL = """
 
@@ -102,55 +110,43 @@ CREATE INDEX IF NOT EXISTS idx_conflicts_user_pending ON memory_conflicts(user_i
 
 async def init_db():
     """Initialize database tables if they don't exist."""
-    pool = await get_pool()
-    async with pool.acquire() as conn:
+    async with get_connection() as conn:
         await conn.execute(CREATE_TABLES_SQL)
     print("[POSTGRES] Database initialized successfully")
 
 
 # ---------------Helper Functions---------------
 async def create_user(email : str , password_hash : str , name : str) -> str:
-    pool = await get_pool()
-    async with pool.acquire() as conn:
+    async with get_connection() as conn:
         result = await conn.fetchrow("INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING id",
         email, password_hash, name)
-
     return str(result['id'])
 
 
 async def get_user_by_email(email : str) -> dict | None:
-    pool = await get_pool()
-    async with pool.acquire() as conn:
+    async with get_connection() as conn:
         result = await conn.fetchrow("SELECT id, password_hash, name FROM users WHERE email = $1", email)
-    
     if not result:
         return None
-    
     return dict(result)
 
 
 async def get_user_by_id(id : str) -> dict | None:
-    pool = await get_pool()
-    async with pool.acquire() as conn:
+    async with get_connection() as conn:
         result = await conn.fetchrow("SELECT * FROM users WHERE id = $1", id)
-    
     if not result:
         return None
-    
     return dict(result)
 
 
 async def update_user_password(user_id: str, password_hash: str):
-    pool = await get_pool()
-    async with pool.acquire() as conn:
+    async with get_connection() as conn:
         await conn.execute("UPDATE users SET password_hash = $1 WHERE id = $2::uuid", password_hash, user_id)
-
 
 
 # ------------- API Key Functions ----------------
 async def store_api_key(user_id: str, api_name: str, ttl_days: int, key_prefix: str, hashed_key: str):
-    pool = await get_pool()
-    async with pool.acquire() as conn:
+    async with get_connection() as conn:
         await conn.execute(
             """
             INSERT INTO api_keys (user_id, api_name, key_hash, key_prefix, ttl_days)
@@ -160,8 +156,7 @@ async def store_api_key(user_id: str, api_name: str, ttl_days: int, key_prefix: 
         )
 
 async def get_user_api_keys(user_id: str):
-    pool = await get_pool()
-    async with pool.acquire() as conn:
+    async with get_connection() as conn:
         rows = await conn.fetch(
             "SELECT id, api_name, key_prefix, last_used, ttl_days, created_at, is_active "
             "FROM api_keys WHERE user_id = $1 ORDER BY created_at DESC",
@@ -170,27 +165,23 @@ async def get_user_api_keys(user_id: str):
     return [dict(row) for row in rows]
 
 async def remove_user_api_key(id: str):
-    pool = await get_pool()
-    async with pool.acquire() as conn:
+    async with get_connection() as conn:
         await conn.execute("UPDATE api_keys SET is_active = False WHERE id = $1::uuid", id)
 
 async def get_stored_api_key_hash(prefix:str):
-    pool = await get_pool()
-    async with pool.acquire() as conn:
+    async with get_connection() as conn:
         result = await conn.fetchrow('SELECT id, user_id, key_hash FROM api_keys WHERE key_prefix = $1', prefix)
     if result: return result
     return None
 
 async def update_api_usage(id: str):
-    pool = await get_pool()
-    async with pool.acquire() as conn:
+    async with get_connection() as conn:
         await conn.execute("UPDATE api_keys SET last_used = NOW() WHERE id = $1", id)
 
 
 #-------------Agent Logs Functions----------------
 async def insert_agent_log(agent_name: str, user_id: str, action: str, memory_ids: list[str], status: str):
-    pool = await get_pool()
-    async with pool.acquire() as conn:
+    async with get_connection() as conn:
         await conn.execute(
             """
             INSERT INTO agent_logs (agent_name, user_id, action, memory_ids, status)
@@ -200,28 +191,24 @@ async def insert_agent_log(agent_name: str, user_id: str, action: str, memory_id
         )
 
 async def get_agent_logs(user_id: str, limit: int = 20):
-    pool = await get_pool()
-    async with pool.acquire() as conn:
+    async with get_connection() as conn:
         rows = await conn.fetch("SELECT * FROM agent_logs WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2", user_id, limit)
     return [dict(row) for row in rows]
 
 async def get_agent_log_by_id(id: str):
-    pool = await get_pool()
-    async with pool.acquire() as conn:
+    async with get_connection() as conn:
         result = await conn.fetchrow("SELECT * FROM agent_logs WHERE id = $1", id)
     return dict(result) if result else None
 
 
 async def get_all_users() -> list[str]:
-    pool = await get_pool()
-    async with pool.acquire() as conn:
+    async with get_connection() as conn:
         rows = await conn.fetch("SELECT id FROM users")
     return [str(row['id']) for row in rows]
 
 #----------- Memory Conflicts -----------------
 async def fetch_pending_conflicts(user_id: str):
-    pool = await get_pool()
-    async with pool.acquire() as conn:
+    async with get_connection() as conn:
         rows = await conn.fetch(
             "SELECT * FROM memory_conflicts WHERE user_id = $1 AND action = 'pending' ORDER BY similarity DESC",
             user_id
@@ -229,8 +216,7 @@ async def fetch_pending_conflicts(user_id: str):
     return [dict(row) for row in rows]
 
 async def resolve_memory_conflict(conflict_id: str, user_id: str, action:str):
-    pool = await get_pool()
-    async with pool.acquire() as conn:
+    async with get_connection() as conn:
         await conn.execute(
             """
             UPDATE memory_conflicts 
@@ -243,7 +229,6 @@ async def resolve_memory_conflict(conflict_id: str, user_id: str, action:str):
         )
 
 async def insert_memory_conflicts_batch(user_id: str, conflicts: list[dict]):
-    pool = await get_pool()
     data = [
         (
             user_id,
@@ -255,8 +240,7 @@ async def insert_memory_conflicts_batch(user_id: str, conflicts: list[dict]):
         )
         for c in conflicts
     ]
-    
-    async with pool.acquire() as conn:
+    async with get_connection() as conn:
         await conn.executemany(
             """
             INSERT INTO memory_conflicts (user_id, memory_a_id, memory_a_text, memory_b_id, memory_b_text, similarity)
@@ -268,8 +252,7 @@ async def insert_memory_conflicts_batch(user_id: str, conflicts: list[dict]):
 
 # ------------- Apps Functions --------------
 async def register_app(user_id: str, app_id: str, app_name: str):
-    pool = await get_pool()
-    async with pool.acquire() as conn:
+    async with get_connection() as conn:
         await conn.execute(
             """
             INSERT INTO app_registry (user_id, app_id, app_name, last_seen)
@@ -282,8 +265,7 @@ async def register_app(user_id: str, app_id: str, app_name: str):
         )
 
 async def list_registered_apps(user_id: str, count: bool = False):
-    pool = await get_pool()
-    async with pool.acquire() as conn:
+    async with get_connection() as conn:
         if count:
             return await conn.fetchval(
                 "SELECT COUNT(*) FROM app_registry WHERE user_id = $1",
@@ -297,15 +279,13 @@ async def list_registered_apps(user_id: str, count: bool = False):
     return [dict(row) for row in rows]
 
 async def deregister_app(id: str):
-    pool = await get_pool()
-    async with pool.acquire() as conn:
+    async with get_connection() as conn:
         await conn.execute("DELETE FROM app_registry WHERE id = $1", id)
 
 
 # ------------- Settings Functions --------------
 async def get_user_settings(user_id: str) -> dict:
-    pool = await get_pool()
-    async with pool.acquire() as conn:
+    async with get_connection() as conn:
         row = await conn.fetchrow("SELECT * FROM user_settings WHERE user_id = $1::uuid", user_id)
         if not row:
             row = await conn.fetchrow(
@@ -319,8 +299,7 @@ async def get_user_settings(user_id: str) -> dict:
     return dict(row)
 
 async def update_user_settings(user_id: str, default_type: str, default_ttl: int | None, dedup_limit: float):
-    pool = await get_pool()
-    async with pool.acquire() as conn:
+    async with get_connection() as conn:
         await conn.execute(
             """
             INSERT INTO user_settings (user_id, default_type, default_ttl, dedup_limit)
@@ -332,6 +311,3 @@ async def update_user_settings(user_id: str, default_type: str, default_ttl: int
             """,
             user_id, default_type, default_ttl, dedup_limit
         )
-
-# ---------------- Jobs Functions ----------------
-

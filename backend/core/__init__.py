@@ -14,3 +14,5 @@ from .scheduler import (
     scheduled_consolidation,
     scheduled_summarisation
 )
+
+from .vector_math import pairwise_cosine_similarity

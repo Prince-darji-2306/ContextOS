@@ -45,3 +45,6 @@ class SettingsUpdateRequest(BaseModel):
     default_type: str
     default_ttl: int | None = None
     dedup_limit: float = 0.85
+
+class ChangePasswordRequest(BaseModel):
+    new_password: str

@@ -1,12 +1,9 @@
 import os
+import asyncio
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
     Distance,
-    FieldCondition,
-    Filter,
-    MatchValue,
     PayloadSchemaType,
-    PointStruct,
     VectorParams,
 )
 from sentence_transformers import SentenceTransformer
@@ -19,7 +16,6 @@ load_dotenv()
 _embedding_model: SentenceTransformer | None = None
 
 async def get_embedding_model() -> SentenceTransformer:
-    """Get cached SentenceTransformer model."""
     global _embedding_model
     if _embedding_model is None:
         _embedding_model = SentenceTransformer("BAAI/bge-small-en-v1.5")
@@ -27,9 +23,8 @@ async def get_embedding_model() -> SentenceTransformer:
 
 
 async def get_embedding(text: str) -> list[float]:
-    """Generate a 384-dim embedding for the given text."""
     model = await get_embedding_model()
-    embedding = model.encode(text, normalize_embeddings=True)
+    embedding = await asyncio.to_thread(model.encode, text, normalize_embeddings=True)
     return embedding.tolist()
 
 # ─── Qdrant Client ────────────────────────────────────────────────────────────
@@ -37,7 +32,6 @@ async def get_embedding(text: str) -> list[float]:
 _qdrant_client: QdrantClient | None = None
 
 async def get_qdrant_client() -> QdrantClient:
-    """Get the global Qdrant client singleton."""
     global _qdrant_client
     if _qdrant_client is None:
         _qdrant_client = QdrantClient(

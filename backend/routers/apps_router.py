@@ -1,30 +1,21 @@
-from mcp_server.server import resolve_app_id
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends
 from core import get_current_user
+from mcp_server.server import resolve_app_id
 from repos import register_app, list_registered_apps, deregister_app
 
 router = APIRouter(prefix="/apps", tags=["Apps"])
 
 @router.post("/register")
 async def register_new_app(app_name: str, user_id: str = Depends(get_current_user)):
-    try:
-        app_id = resolve_app_id(app_name)
-        await register_app(user_id, app_id, app_name)
-        return {"message": "App registered successfully"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    app_id = resolve_app_id(app_name)
+    await register_app(user_id, app_id, app_name)
+    return {"message": "App registered successfully"}
 
 @router.get("/list")
 async def list_user_apps(user_id: str = Depends(get_current_user)):
-    try:
-        return await list_registered_apps(user_id)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return await list_registered_apps(user_id)
 
 @router.delete("/deregister/{id}")
 async def deregister_user_app(id: str):
-    try:
-        await deregister_app(id)
-        return {"message": "App deregistered successfully"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    await deregister_app(id)
+    return {"message": "App deregistered successfully"}

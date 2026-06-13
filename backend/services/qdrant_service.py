@@ -161,7 +161,7 @@ async def forget_memories(memory_ids : list[str]):
 
 # ------------Importance Scoring------------
 
-async def score_memory(similarity: float, created_at: str, access_count: int) -> float:
+def score_memory(similarity: float, created_at: str, access_count: int) -> float:
     created = datetime.fromisoformat(created_at)
     days_old = (datetime.now(timezone.utc) - created).days
     recency_score = 1 / (1 + days_old)
@@ -182,7 +182,7 @@ async def batch_update_scores_and_stats(points: list):
             created_at = point.payload.get("created_at")
             current_count = point.payload.get("access_count", 0)
             
-            importance_score = await score_memory(similarity, created_at, current_count)
+            importance_score = score_memory(similarity, created_at, current_count)
             
             operations.append(
                 SetPayloadOperation(
@@ -224,3 +224,20 @@ async def get_expired_memories_id(user_id:str):
         limit=10000
     )
     return [str(p.id) for p in results[0]]
+
+
+async def count_memories(user_id: str) -> int:
+    try:
+        client = await get_qdrant_client()
+        result = client.count(
+            collection_name="memories",
+            count_filter=Filter(
+                must=[
+                    FieldCondition(key="user_id", match=MatchValue(value=user_id))
+                ]
+            )
+        )
+        return result.count
+    except Exception as e:
+        print(f"Error counting memories: {e}")
+        return 0

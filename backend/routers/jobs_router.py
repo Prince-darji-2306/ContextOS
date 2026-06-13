@@ -1,8 +1,9 @@
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from core import get_current_user
-from repos import get_pool, list_registered_apps
+from repos import get_connection, list_registered_apps
 from agents import trigger_full_agent_pipeline
+from services import count_memories
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -26,8 +27,7 @@ async def trigger_pipeline_manually(bgtasks: BackgroundTasks, user_id: str = Dep
 
 @router.get("/agents/status")
 async def get_agents_status(user_id: str = Depends(get_current_user)):
-    pool = await get_pool()
-    async with pool.acquire() as conn:
+    async with get_connection() as conn:
         rows = await conn.fetch(
             """
             SELECT DISTINCT ON (agent_name)
@@ -43,8 +43,7 @@ async def get_agents_status(user_id: str = Depends(get_current_user)):
 
 @router.get("/stats/dashboard")
 async def get_dashboard_stats(user_id: str = Depends(get_current_user)):
-    pool = await get_pool()
-    async with pool.acquire() as conn:
+    async with get_connection() as conn:
         agent_runs_today = await conn.fetchval(
             """
             SELECT COUNT(*) FROM agent_logs
@@ -53,9 +52,11 @@ async def get_dashboard_stats(user_id: str = Depends(get_current_user)):
             uuid.UUID(user_id),
         )
     connected_apps = await list_registered_apps(user_id, count = True)
+    total_memories = await count_memories(user_id)
     return {
         "agent_runs_today": int(agent_runs_today),
         "connected_apps": int(connected_apps),
+        "total_memories": int(total_memories),
     }
 
 
@@ -67,8 +68,7 @@ async def get_job_status(job_id: str, user_id: str = Depends(get_current_user)):
             raise HTTPException(status_code=403, detail="Unauthorized job access")
         return job
 
-    pool = await get_pool()
-    async with pool.acquire() as conn:
+    async with get_connection() as conn:
         rows = await conn.fetch(
             """
             SELECT agent_name, action, memory_ids, status, created_at

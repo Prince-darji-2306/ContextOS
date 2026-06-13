@@ -2,6 +2,7 @@ import numpy as np
 from datetime import datetime, timezone
 from services import search_memory
 from schemas import SearchMemoryRequest
+from core import pairwise_cosine_similarity
 from repos import get_qdrant_client, insert_agent_log
 from qdrant_client.models import SetPayloadOperation, SetPayload
 
@@ -15,20 +16,9 @@ async def run_scorer_agent(user_id: str) -> list[str]:
     client = await get_qdrant_client()
     point_ids = [p.id for p in points]
     
-    # ─── VECTORIZED PAIRWISE SIMILARITY MATRIX (THE CORE OPTIMIZATION) ───
-    # Stack all vectors into a single 2D NumPy array: Shape (N, D)
+    # ─── VECTORIZED PAIRWISE SIMILARITY MATRIX ───
     X = np.array([p.vector for p in points])
-    
-    # Compute the L2 norm of each row (handling division by zero)
-    norms = np.linalg.norm(X, axis=1, keepdims=True)
-    norms[norms == 0] = 1.0
-    
-    # Normalize rows to unit length
-    X_normalized = X / norms
-    
-    # Calculate the entire pairwise Cosine Similarity Matrix: Shape (N, N)
-    # Since rows are normalized, S[i, j] = dot(x_i, x_j) which is exactly the cosine similarity!
-    S = np.dot(X_normalized, X_normalized.T)
+    S = pairwise_cosine_similarity(X)
     
     # Calculate centrality: sum rows, subtract 1.0 (self-similarity on diagonal), divide by (N - 1)
     N_points = len(points)

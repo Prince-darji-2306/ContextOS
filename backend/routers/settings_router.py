@@ -7,20 +7,14 @@ router = APIRouter(prefix="/settings", tags=["Settings"])
 
 @router.get("")
 async def get_settings(user_id: str = Depends(get_current_user)):
-    try:
-        return await get_user_settings(user_id)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return await get_user_settings(user_id)
 
 @router.put("")
 async def update_settings(req: SettingsUpdateRequest, user_id: str = Depends(get_current_user)):
-    try:
-        await update_user_settings(
-            user_id,
-            req.default_type,
-            req.default_ttl,
-            req.dedup_limit
-        )
-        return {"message": "Settings updated successfully"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    await update_user_settings(
+        user_id,
+        req.default_type,
+        req.default_ttl,
+        req.dedup_limit
+    )
+    return {"message": "Settings updated successfully"}

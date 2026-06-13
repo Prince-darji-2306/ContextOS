@@ -6,31 +6,22 @@ router = APIRouter(prefix="/api-key" , tags=["API Keys"])
 
 @router.post("/new")
 async def generate_api_key(api_name: str, ttl_days: int | None = None, user_id : str = Depends(get_current_user)):
-    try:
-        key = await create_user_api_key(user_id, api_name, ttl_days)
-        return {
-            "key": key,
-            "user_id": user_id,
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    key = await create_user_api_key(user_id, api_name, ttl_days)
+    return {
+        "key": key,
+        "user_id": user_id,
+    }
 
 @router.get('/list')
 async def list_user_api_keys(user_id : str = Depends(get_current_user)):
-    try:
-        keys = await get_user_api_keys(user_id)
-        return {
-            "keys": keys,
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    keys = await get_user_api_keys(user_id)
+    return {
+        "keys": keys,
+    }
 
 @router.delete('/remove')
 async def remove_user_key(key_id : str , user_id : str = Depends(get_current_user)):
-    try:
-        await remove_user_api_key(key_id)
-        return {
-            "message": "Key deleted successfully",
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    await remove_user_api_key(key_id)
+    return {
+        "message": "Key deleted successfully",
+    }

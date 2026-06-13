@@ -2,6 +2,7 @@ import os
 import asyncio
 import numpy as np
 from groq import AsyncGroq
+from core import pairwise_cosine_similarity
 from repos import insert_agent_log, insert_memory_conflicts_batch
 from services import search_memory, forget_memories, create_memory
 from schemas import WriteMemoryRequest, SearchMemoryRequest
@@ -15,10 +16,7 @@ async def run_consolidation_agent(user_id: str) -> list[str]:
         return []
         
     X = np.array([p.vector for p in points])
-    norms = np.linalg.norm(X, axis=1, keepdims=True)
-    norms[norms == 0] = 1.0
-    X_normalized = X / norms
-    S = np.dot(X_normalized, X_normalized.T)
+    S = pairwise_cosine_similarity(X)
     
     merged_ids = []
     conflicts_to_create = []

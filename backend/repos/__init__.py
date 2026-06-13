@@ -3,6 +3,7 @@ from .postgres import (
     init_db ,
     close_pool ,
     get_pool ,
+    get_connection ,
     get_user_by_email ,
     get_user_by_id ,
     create_user,
