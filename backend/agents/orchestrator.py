@@ -1,9 +1,7 @@
 import logging
-from typing import TypedDict
-from langgraph.graph import StateGraph, START, END
+from langgraph.graph import StateGraph, END
 from repos.postgres import insert_agent_log
 
-# Import agents
 from schemas import AgentState
 from agents import (
     run_decay_agent,
@@ -14,22 +12,7 @@ from agents import (
 
 logger = logging.getLogger("orchestrator")
 
-def build_orchestrator_graph(user_id: str):
-    workflow = StateGraph(AgentState)
-    workflow.add_node("consolidation_agent", run_consolidation_agent)
-    workflow.add_node("summarization_agent", run_summarization_agent)
-    workflow.add_node("context_scorer_agent", run_scorer_agent)
-    workflow.add_node("decay_agent", run_decay_agent)
-    workflow.add_edge(START, "consolidation_agent")
-    workflow.add_edge("consolidation_agent", "summarization_agent")
-    workflow.add_edge("summarization_agent", "context_scorer_agent")
-    workflow.add_edge("context_scorer_agent", "decay_agent")
-    workflow.add_edge("decay_agent", END)
-    return workflow.compile()
-
-
 # Define Node Actions
-
 async def node_decay(state: AgentState) -> AgentState:
     try:
         affected_ids = await run_decay_agent(state["user_id"])
@@ -117,7 +100,6 @@ graph.add_edge("log_result", END)
 orchestrator_app = graph.compile()
 
 async def trigger_full_agent_pipeline(user_id: str):
-    """Entrypoint function to run the full pipeline asynchronously for a user."""
     initial_state = {
         "user_id": user_id,
         "task": "full_cleanup",

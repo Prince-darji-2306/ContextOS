@@ -19,7 +19,7 @@ async def run_summarization_agent(user_id : str , time_period_in_days : int = 30
                 }
             )
         )
-        memories = results[0]  # Properly unpack the Qdrant scroll points tuple
+        memories = results[0] 
         
         if not memories:
             return "No episodic memories found in the specified time period."
@@ -40,7 +40,7 @@ async def run_summarization_agent(user_id : str , time_period_in_days : int = 30
         summarized_memory = chat_completion.choices[0].message.content.strip()
         
         await create_memory(user_id, WriteMemoryRequest(
-            app_id='summerizer_agent',
+            app_id='summarizer_agent',
             text=summarized_memory,
             tags=list(set(sum([m.payload.get("tags", []) for m in memories], []))),
             memory_type="summary",
@@ -49,7 +49,7 @@ async def run_summarization_agent(user_id : str , time_period_in_days : int = 30
         
         memory_ids = [m.id for m in memories]
         await forget_memories(memory_ids)
-        await insert_agent_log("summerization_agent", user_id, "summarized_memories", memory_ids, "success")
+        await insert_agent_log("summarization_agent", user_id, "summarized_memories", memory_ids, "success")
         
         return summarized_memory
     except Exception as e:
