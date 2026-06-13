@@ -62,6 +62,6 @@ export function useSaveSettings() {
 export function useChangePassword() {
   return useMutation({
     mutationFn: (new_password) =>
-      api.post('/auth/change-password', null, { params: { new_password } }),
+      api.post('/auth/change-password', { new_password }),
   })
 }

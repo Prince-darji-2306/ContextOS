@@ -41,7 +41,6 @@
     --violet: 262 83% 58%;
     --teal: 173 80% 40%;
     --amber: 38 92% 50%;
-    --danger: 0 84% 60%;
   }
 
   .dark {
@@ -82,7 +81,6 @@
     --violet: 262 83% 65%;
     --teal: 173 70% 50%;
     --amber: 38 92% 55%;
-    --danger: 0 84% 60%;
   }
 
   * {
@@ -195,10 +193,6 @@
 
   .shimmer {
     @apply relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer before:bg-gradient-to-r before:from-transparent before:via-surface-hover before:to-transparent;
-  }
-
-  .gradient-text {
-    @apply bg-gradient-to-r from-accent via-accent-hover to-accent bg-clip-text text-transparent;
   }
 
   .gradient-text-animated {

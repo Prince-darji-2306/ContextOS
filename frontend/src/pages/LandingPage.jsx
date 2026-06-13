@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { ParticleField } from '../components/ParticleField'
 import { ThemeToggle } from '../components/ThemeToggle'
-import { AnimatedCounter } from '../components/AnimatedCounter'
+import { CountUp } from '../components/CountUp'
 import { ArrowRight, Brain, Plug, Network, ChevronRight, Github, BookOpen, Terminal } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
@@ -203,7 +203,7 @@ export default function LandingPage() {
                 className="text-center p-6 card-base card-hover"
               >
                 <div className="text-3xl md:text-4xl font-bold text-text mb-2">
-                  <AnimatedCounter end={stat.value} suffix={stat.suffix} />
+                  <CountUp end={stat.value} suffix={stat.suffix} />
                 </div>
                 <div className="text-sm text-text-secondary">{stat.label}</div>
               </motion.div>

@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
-import { useSidebarStore } from '../store/sidebarStore'
 import { useThemeStore } from '../store/themeStore'
 import { useAuthStore } from '../store/authStore'
 import { ToastContainer } from '../components/Toast'
@@ -20,7 +19,8 @@ const navItems = [
 ]
 
 export default function DashboardLayout() {
-  const { collapsed, toggle } = useSidebarStore()
+  const [collapsed, setCollapsed] = useState(false)
+  const toggle = () => setCollapsed((c) => !c)
   const { theme, toggleTheme } = useThemeStore()
   const location = useLocation()
   const navigate = useNavigate()

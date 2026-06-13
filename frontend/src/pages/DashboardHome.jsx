@@ -68,7 +68,7 @@ export default function DashboardHome() {
             Since we don't have count_memories wired in API, let's show memories array length 
             or a static mock just for the gauge. Wait, we DO have count_memories? 
             I added it in postgres.py but didn't expose it in jobs_router. Let's just use what we have. */}
-        <StatCard icon={Brain} label="Total Memories" value={memories.length > 0 ? "Active" : 0} sub="Semantic knowledge" color="text-violet" isLoading={memLoading} sparkline />
+        <StatCard icon={Brain} label="Total Memories" value={stats?.total_memories || 0} sub="Semantic knowledge" color="text-violet" isLoading={statsLoading} sparkline />
         <StatCard icon={Plug} label="Connected Apps" value={stats?.connected_apps || 0} sub="Registered clients" color="text-teal" isLoading={statsLoading} />
         <StatCard icon={Bot} label="Agent Runs Today" value={stats?.agent_runs_today || 0} sub="Background jobs" color="text-amber" isLoading={statsLoading} />
         <StatCard icon={Activity} label="Memory Health" value={100} sub="No conflicts detected" color="text-teal" accent="text-teal" />
