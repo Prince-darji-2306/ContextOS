@@ -14,6 +14,7 @@ export const APP_ICON_MAP = {
   'vs-code':        Monitor,
   'continue-dev':   Terminal,
   'context-os':     Plug,
+  'antigravity':    Bot,
 }
 
 // Static setup steps per app_id — kept in frontend since backend has no concept of this
@@ -62,6 +63,7 @@ export function useApps() {
         { app_id: 'vs-code', app_name: 'VS Code' },
         { app_id: 'continue-dev', app_name: 'Continue' },
         { app_id: 'context-os', app_name: 'ContextOS' },
+        { app_id: 'antigravity', app_name: 'Antigravity' },
       ]
 
       const adaptedFetched = fetchedApps.map(adaptApp)

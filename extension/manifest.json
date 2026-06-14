@@ -1,0 +1,76 @@
+{
+  "manifest_version": 3,
+  "name": "ContextOS — Universal AI Memory",
+  "description": "Gives ChatGPT, Gemini, Grok, and Claude persistent cross-app memory via ContextOS.",
+  "version": "1.0.0",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": [
+    "storage",
+    "activeTab",
+    "alarms"
+  ],
+  "host_permissions": [
+    "https://chatgpt.com/*",
+    "https://gemini.google.com/*",
+    "https://grok.com/*",
+    "https://claude.ai/*",
+    "http://localhost:8000/*"
+  ],
+  "background": {
+    "service_worker": "background/service_worker.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://chatgpt.com/*"],
+      "js": [
+        "content_scripts/adapters/chatgpt.js",
+        "content_scripts/injector.js",
+        "content_scripts/response_capture.js"
+      ],
+      "css": ["styles/overlay.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://gemini.google.com/*"],
+      "js": [
+        "content_scripts/adapters/gemini.js",
+        "content_scripts/injector.js",
+        "content_scripts/response_capture.js"
+      ],
+      "css": ["styles/overlay.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://grok.com/*"],
+      "js": [
+        "content_scripts/adapters/grok.js",
+        "content_scripts/injector.js",
+        "content_scripts/response_capture.js"
+      ],
+      "css": ["styles/overlay.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://claude.ai/*"],
+      "js": [
+        "content_scripts/adapters/claude_web.js",
+        "content_scripts/injector.js",
+        "content_scripts/response_capture.js"
+      ],
+      "css": ["styles/overlay.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png"
+    }
+  }
+}

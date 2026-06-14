@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=370" />
+  <link rel="stylesheet" href="popup.css" />
+  <title>ContextOS</title>
+</head>
+<body>
+  <div class="popup-container">
+    <header class="popup-header">
+      <div class="logo-row">
+        <img src="../icons/icon48.png" alt="ContextOS" class="logo-icon" />
+        <h1>ContextOS</h1>
+      </div>
+      <p class="tagline">Universal AI Memory</p>
+    </header>
+
+    <!-- State: Not Connected -->
+    <section id="setup-section" class="section">
+      <label for="api-key-input">Enter your ContextOS API Key</label>
+      <input type="password" id="api-key-input" placeholder="ctx_os.xxxx.xxxx" autocomplete="off" />
+      <button id="connect-btn" class="btn-primary">Connect</button>
+      <p id="error-msg" class="error-text hidden"></p>
+      <a href="http://localhost:5173/api-keys" target="_blank" class="help-link">
+        Get your API key from the dashboard →
+      </a>
+    </section>
+
+    <!-- State: Connected -->
+    <section id="connected-section" class="section hidden">
+      <div class="status-row">
+        <span class="status-dot green"></span>
+        <span id="user-name">Connected</span>
+      </div>
+
+      <div class="setting-row">
+        <label>Auto-inject context</label>
+        <label class="switch">
+          <input type="checkbox" id="auto-inject-toggle" checked />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="setting-row">
+        <label>Max memories to inject</label>
+        <div class="slider-group">
+          <input type="range" id="max-memories-slider" min="1" max="10" value="5" />
+          <span id="max-memories-value">5</span>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <label>Show injection badge</label>
+        <label class="switch">
+          <input type="checkbox" id="show-badge-toggle" checked />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <fieldset class="platforms-fieldset">
+        <legend>Active Platforms</legend>
+        <label><input type="checkbox" id="platform-chatgpt" checked /> ChatGPT</label>
+        <label><input type="checkbox" id="platform-gemini" checked /> Gemini</label>
+        <label><input type="checkbox" id="platform-grok" checked /> Grok</label>
+        <label><input type="checkbox" id="platform-claude-web" checked /> Claude Web</label>
+      </fieldset>
+
+      <div class="action-buttons">
+        <a href="http://localhost:5173/memories" target="_blank" class="btn-secondary">View Memories</a>
+        <button id="disconnect-btn" class="btn-danger">Disconnect</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="popup.js" type="module"></script>
+</body>
+</html>

@@ -22,16 +22,19 @@ const features = [
     icon: Brain,
     title: 'Semantic Memory',
     description: 'Store and retrieve context by meaning, not keywords. Powered by vector embeddings.',
+    color: 'text-violet',
   },
   {
     icon: Plug,
     title: 'MCP Native',
     description: 'Works with Claude Desktop, Cursor, Cline, Windsurf out of the box. One URL, one key.',
+    color: 'text-teal',
   },
   {
     icon: Network,
     title: 'Multi-Agent Coordination',
     description: 'Agents share context, detect conflicts, and stay aware of each other through ContextOS.',
+    color: 'text-amber',
   },
 ]
 
@@ -241,7 +244,7 @@ export default function LandingPage() {
                   'hover:bg-surface/60 hover:border-border hover:-translate-y-0.5'
                 )}
               >
-                <feature.icon className="w-5 h-5 mb-5 text-text" strokeWidth={1.75} />
+                <feature.icon className={`w-5 h-5 mb-5 ${feature.color || 'text-text'}`} strokeWidth={1.75} />
                 <h3 className="text-lg font-semibold text-text mb-3">{feature.title}</h3>
                 <p className="text-text-secondary text-sm leading-relaxed">{feature.description}</p>
               </motion.div>

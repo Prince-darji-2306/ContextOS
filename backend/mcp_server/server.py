@@ -100,5 +100,6 @@ async def resolve_app_id(app_name: str) -> str:
         "Continue.dev":       "continue-dev",
         "VS Code (Copilot)":  "vs-code",
         "Zed":                "zed",
+        "Antigravity":        "antigravity",
     }
     return app_ids.get(app_name, "context-os")

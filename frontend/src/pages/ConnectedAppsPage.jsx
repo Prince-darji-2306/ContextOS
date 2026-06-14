@@ -71,7 +71,7 @@ export default function ConnectedAppsPage() {
               : row === 1
               ? ["text-amber", "text-violet", "text-teal"]
               : ["text-teal", "text-teal", "text-teal"]
-            const iconColor = colors[col]
+            const iconColor = app.app_id === 'antigravity' ? 'text-amber' : colors[col]
             const Icon = app.icon
             return (
               <motion.div
@@ -146,7 +146,7 @@ export default function ConnectedAppsPage() {
                       : row === 1
                       ? ["text-amber", "text-violet", "text-teal"]
                       : ["text-teal", "text-teal", "text-teal"]
-                    iconColor = colors[col]
+                    iconColor = selectedApp.app_id === 'antigravity' ? 'text-amber' : colors[col]
                   }
                   return <Icon className={`w-7 h-7 ${iconColor}`} />
                 })()}

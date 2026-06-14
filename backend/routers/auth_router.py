@@ -1,7 +1,7 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Header
 from schemas import LoginRequest, RegisterRequest, ChangePasswordRequest
 from repos import get_user_by_email, create_user, update_user_password, get_user_by_id
-from core import create_access_token, hash_password, verify_password, get_current_user
+from core import create_access_token, hash_password, verify_password, get_current_user, fetch_user_id
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -53,4 +53,29 @@ async def get_me(user_id: str = Depends(get_current_user)):
         "user_id": user_id,
         "email": user["email"],
         "display_name": user["name"],
+    }
+
+
+@router.post("/validate-key")
+async def validate_api_key(authorization: str = Header(...)):
+    """
+    Extension calls this on first setup to verify the API key is valid.
+    Uses the existing fetch_user_id() which resolves key → user_id.
+    Returns user info so the popup can show "Connected as: Prince".
+    """
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+
+    token = authorization.split(" ", 1)[1]
+    user_id = await fetch_user_id(token)
+
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+
+    user = await get_user_by_id(user_id)
+    return {
+        "valid": True,
+        "user_id": user_id,
+        "display_name": user["name"] if user else None,
+        "email": user["email"] if user else None,
     }

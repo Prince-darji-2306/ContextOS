@@ -4,3 +4,4 @@ from .memory_router import router as memory_router
 from .jobs_router import router as jobs_router
 from .apps_router import router as apps_router
 from .settings_router import router as settings_router
+from .extension_router import router as extension_router

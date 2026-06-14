@@ -1,0 +1,102 @@
+/* ContextOS Injection Badge */
+.contextos-badge {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: #e0e0ff;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.3),
+    0 0 1px rgba(255, 255, 255, 0.1);
+  z-index: 999999;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
+  opacity: 1;
+  transform: translateY(0);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.contextos-badge.hidden {
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+}
+
+.contextos-badge-icon {
+  font-size: 16px;
+}
+
+/* Save to ContextOS Button */
+.contextos-save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  margin-top: 8px;
+  background: rgba(83, 74, 183, 0.1);
+  color: #7c6fdb;
+  border: 1px solid rgba(83, 74, 183, 0.25);
+  border-radius: 8px;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.contextos-save-btn:hover {
+  background: rgba(83, 74, 183, 0.2);
+  border-color: rgba(83, 74, 183, 0.4);
+  transform: translateY(-1px);
+}
+
+.contextos-save-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+  transform: none;
+}
+
+.contextos-save-btn.saved {
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.contextos-save-icon {
+  font-size: 14px;
+}
+
+/* Error notification */
+.contextos-error-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #1a1a2e;
+  color: #ff6b6b;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-family: "Inter", -apple-system, sans-serif;
+  font-size: 13px;
+  z-index: 999999;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 107, 107, 0.2);
+  animation: contextos-slideIn 0.3s ease;
+}
+
+@keyframes contextos-slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
